@@ -244,23 +244,23 @@ export default function ProgramEditorPage() {
         </div>
       </div>
 
-      {/* 1RM Bar */}
+      {/* 1RM Bar — collapsible */}
       {Object.keys(program.oneRMs).length > 0 && (
-        <div className="card p-3 mb-4 print:hidden">
-          <div className="flex items-center gap-2 mb-2">
-            <h3 className="section-title">1RM (kg)</h3>
-          </div>
+        <details className="mb-4 print:hidden group/rm">
+          <summary className="text-[11px] text-neutral-600 cursor-pointer hover:text-neutral-400 transition-colors select-none mb-2">
+            1RM values <span className="text-neutral-700">({Object.values(program.oneRMs).filter(v => v > 0).length} exercises)</span>
+          </summary>
           <div className="flex flex-wrap gap-1.5">
             {Object.entries(program.oneRMs).map(([exId, rm]) => (
-              <div key={exId} className="flex items-center gap-1.5 bg-[#111] rounded-lg px-2.5 py-1.5 border border-[#1e1e1e]">
-                <span className="text-[11px] text-neutral-400">{allExercises.find((e) => e.id === exId)?.name || exId}</span>
+              <div key={exId} className="flex items-center gap-1.5 bg-[#111] rounded-lg px-2.5 py-1 border border-[#1a1a1a]">
+                <span className="text-[11px] text-neutral-500">{allExercises.find((e) => e.id === exId)?.name || exId}</span>
                 <input type="number" min={0} step={2.5} value={rm || ""}
                   onChange={(e) => saveOneRMs({ ...program.oneRMs, [exId]: parseFloat(e.target.value) || 0 })}
-                  className="w-14 bg-[#0c0c0c] border border-[#222] rounded-md px-1.5 py-0.5 text-[12px] text-white tabular-nums focus:border-bordeaux-700 focus:outline-none text-center" />
+                  className="w-14 bg-[#0c0c0c] border border-[#1e1e1e] rounded px-1 py-0.5 text-[12px] text-white tabular-nums focus:border-bordeaux-700 focus:outline-none text-center" />
               </div>
             ))}
           </div>
-        </div>
+        </details>
       )}
 
       {/* RPE Table */}
@@ -362,7 +362,7 @@ export default function ProgramEditorPage() {
                   const firstWeekDay = program.weeks[0]?.days[i];
                   const label = firstWeekDay?.label;
                   return (
-                    <th key={i} className="text-left text-[12px] text-neutral-500 p-2 min-w-[260px] print:min-w-0 font-normal">
+                    <th key={i} className="text-left text-[12px] text-neutral-500 p-2 min-w-[220px] print:min-w-0 font-normal">
                       {editingLabel?.dayId === firstWeekDay?.id ? (
                         <input type="text" autoFocus value={editingLabel.value}
                           onChange={(e) => setEditingLabel({ ...editingLabel, value: e.target.value })}
@@ -407,90 +407,96 @@ export default function ProgramEditorPage() {
                           className={`p-2 border-l border-[#131313] cursor-pointer transition-colors duration-100 ${isActive ? "bg-[#111]" : "hover:bg-[#0f0f0f]"} ${dayComplete ? "bg-emerald-950/5" : ""}`}
                           onClick={() => { setActiveCell({ week: wIdx, day: dIdx }); setShowSearch(false); setSearchQuery(""); }}>
 
-                          <div className="space-y-1.5">
+                          <div className="space-y-1">
                             {day.exercises.map((ex, eIdx) => {
                               const oneRM = program.oneRMs[ex.exerciseId] || 0;
-                              const ri = getRI(ex.intensityPercent, ex.reps);
                               const suggestion = getSuggestion(wIdx, dIdx, ex.exerciseId);
+                              const hasActuals = ex.actualSets !== null;
                               return (
-                                <div key={ex.id} className={`rounded-lg p-2 transition-colors ${
-                                  ex.actualSets !== null
-                                    ? "bg-emerald-500/[0.03] border border-emerald-500/10"
-                                    : "bg-[#111] border border-[#1a1a1a] hover:border-[#222]"
+                                <div key={ex.id} className={`rounded-lg px-2.5 py-2 transition-colors group/ex ${
+                                  hasActuals ? "bg-emerald-500/[0.03] border border-emerald-500/10" : "bg-[#111] border border-[#1a1a1a]"
                                 }`}>
-                                  <div className="flex items-center justify-between mb-1">
+                                  {/* Row 1: Name + quick summary */}
+                                  <div className="flex items-center justify-between">
                                     <span className="text-[12px] font-medium text-neutral-200">{ex.exerciseName}</span>
-                                    <div className="flex items-center gap-1.5 print:hidden">
-                                      <button onClick={(e) => { e.stopPropagation(); copyExerciseToAllWeeks(ex, day.dayNumber); }}
-                                        className="text-[9px] text-neutral-700 hover:text-bordeaux-500 transition-colors" title="Copy to all weeks">all wk</button>
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-[11px] text-neutral-500 tabular-nums">
+                                        {ex.sets}x{ex.reps}
+                                        {ex.loadKg ? ` @ ${ex.loadKg}kg` : ex.intensityPercent ? ` @ ${ex.intensityPercent}%` : ""}
+                                        {ex.rpe ? ` RPE${ex.rpe}` : ""}
+                                      </span>
                                       <button onClick={(e) => { e.stopPropagation(); removeExercise(wIdx, dIdx, eIdx); }}
-                                        className="text-neutral-700 hover:text-red-400 text-[11px] transition-colors leading-none">x</button>
+                                        className="text-neutral-800 hover:text-red-400 text-[11px] transition-colors leading-none opacity-0 group-hover/ex:opacity-100 print:hidden">x</button>
                                     </div>
                                   </div>
 
+                                  {/* Suggestion */}
                                   {suggestion && !ex.loadKg && (
                                     <button onClick={(e) => { e.stopPropagation(); updateExercise(wIdx, dIdx, eIdx, suggestion); }}
-                                      className="text-[10px] text-bordeaux-500/70 hover:text-bordeaux-400 mb-1 block print:hidden transition-colors">
-                                      Suggest: {suggestion.sets}x{suggestion.reps} @ {suggestion.loadKg} kg
+                                      className="text-[10px] text-bordeaux-500/70 hover:text-bordeaux-400 mt-0.5 block print:hidden transition-colors">
+                                      Apply: {suggestion.sets}x{suggestion.reps} @ {suggestion.loadKg}kg
                                     </button>
                                   )}
 
-                                  <div className="grid grid-cols-6 gap-0.5 text-[11px]">
-                                    {[
-                                      { label: "Sets", val: ex.sets, key: "sets", parse: parseInt },
-                                      { label: "Reps", val: ex.reps, key: "reps", parse: parseInt },
-                                      { label: "%", val: ex.intensityPercent, key: "intensityPercent", parse: parseFloat },
-                                      { label: "kg", val: ex.loadKg, key: "loadKg", parse: parseFloat },
-                                    ].map(({ label, val, key, parse }) => (
-                                      <div key={key}>
-                                        <label className="text-[9px] text-neutral-600 block">{label}</label>
-                                        <input type="number" value={val ?? ""} onClick={(e) => e.stopPropagation()}
-                                          onChange={(e) => updateExercise(wIdx, dIdx, eIdx, { [key]: e.target.value ? parse(e.target.value) : null } as any)}
-                                          className="w-full bg-[#0c0c0c] border border-[#1e1e1e] rounded px-1 py-0.5 text-neutral-200 focus:border-bordeaux-700 focus:outline-none text-center tabular-nums print:border-gray-300" />
+                                  {/* Row 2: Editable fields — compact inline */}
+                                  {isActive && (
+                                    <div className="mt-2 print:hidden" onClick={(e) => e.stopPropagation()}>
+                                      <div className="grid grid-cols-4 gap-1 text-[11px]">
+                                        {[
+                                          { label: "Sets", val: ex.sets, key: "sets", parse: parseInt },
+                                          { label: "Reps", val: ex.reps, key: "reps", parse: parseInt },
+                                          { label: "%1RM", val: ex.intensityPercent, key: "intensityPercent", parse: parseFloat },
+                                          { label: "kg", val: ex.loadKg, key: "loadKg", parse: parseFloat },
+                                        ].map(({ label, val, key, parse }) => (
+                                          <div key={key}>
+                                            <label className="text-[9px] text-neutral-600">{label}</label>
+                                            <input type="number" value={val ?? ""}
+                                              onChange={(e) => updateExercise(wIdx, dIdx, eIdx, { [key]: e.target.value ? parse(e.target.value) : null } as any)}
+                                              className="w-full bg-[#0c0c0c] border border-[#1e1e1e] rounded px-1 py-0.5 text-neutral-200 focus:border-bordeaux-700 focus:outline-none text-center tabular-nums" />
+                                          </div>
+                                        ))}
                                       </div>
-                                    ))}
-                                    <div>
-                                      <label className="text-[9px] text-neutral-600 block">RPE</label>
-                                      <select value={ex.rpe ?? ""} onClick={(e) => e.stopPropagation()}
-                                        onChange={(e) => updateExercise(wIdx, dIdx, eIdx, { rpe: e.target.value ? parseFloat(e.target.value) : null })}
-                                        className="w-full bg-[#0c0c0c] border border-[#1e1e1e] rounded px-0 py-0.5 text-neutral-200 focus:border-bordeaux-700 focus:outline-none text-center print:border-gray-300">
-                                        <option value="">—</option>
-                                        {RPE_VALUES.map((v) => <option key={v} value={v}>{v}</option>)}
-                                      </select>
-                                    </div>
-                                    <div>
-                                      <label className="text-[9px] text-neutral-600 block">RI</label>
-                                      <div className="px-1 py-0.5 text-neutral-600 text-center tabular-nums">{ri ? `${ri}%` : "—"}</div>
-                                    </div>
-                                  </div>
-
-                                  <div className="flex items-center gap-2 mt-1 text-[9px] text-neutral-700">
-                                    {oneRM > 0 && <span>1RM {oneRM}kg</span>}
-                                    {ex.loadKg && ex.sets > 0 && ex.reps > 0 && <span>Vol {(ex.sets * ex.reps * ex.loadKg).toLocaleString()}kg</span>}
-                                  </div>
-
-                                  <details className="mt-1 print:hidden" onClick={(e) => e.stopPropagation()}>
-                                    <summary className="text-[9px] text-neutral-700 cursor-pointer hover:text-neutral-500 transition-colors">Actuals</summary>
-                                    <div className="grid grid-cols-3 gap-0.5 mt-1 text-[11px]">
-                                      {[
-                                        { label: "Sets", val: ex.actualSets, key: "actualSets", parse: parseInt },
-                                        { label: "Reps", val: ex.actualReps, key: "actualReps", parse: parseInt },
-                                        { label: "kg", val: ex.actualLoadKg, key: "actualLoadKg", parse: parseFloat },
-                                      ].map(({ label, val, key, parse }) => (
-                                        <div key={key}>
-                                          <label className="text-[9px] text-neutral-600 block">{label}</label>
-                                          <input type="number" value={val ?? ""}
-                                            onChange={(e) => updateExercise(wIdx, dIdx, eIdx, { [key]: e.target.value ? parse(e.target.value) : null } as any)}
-                                            className="w-full bg-[#0c0c0c] border border-[#1e1e1e] rounded px-1 py-0.5 text-neutral-200 focus:border-bordeaux-700 focus:outline-none text-center tabular-nums" />
+                                      <div className="grid grid-cols-3 gap-1 mt-1 text-[11px]">
+                                        <div>
+                                          <label className="text-[9px] text-neutral-600">RPE</label>
+                                          <select value={ex.rpe ?? ""}
+                                            onChange={(e) => updateExercise(wIdx, dIdx, eIdx, { rpe: e.target.value ? parseFloat(e.target.value) : null })}
+                                            className="w-full bg-[#0c0c0c] border border-[#1e1e1e] rounded px-0 py-0.5 text-neutral-200 focus:border-bordeaux-700 focus:outline-none text-center">
+                                            <option value="">—</option>
+                                            {RPE_VALUES.map((v) => <option key={v} value={v}>{v}</option>)}
+                                          </select>
                                         </div>
-                                      ))}
+                                        <div className="col-span-2">
+                                          <label className="text-[9px] text-neutral-600">Notes</label>
+                                          <input type="text" value={ex.notes || ""} placeholder="..."
+                                            onChange={(e) => updateExercise(wIdx, dIdx, eIdx, { notes: e.target.value || null })}
+                                            className="w-full bg-[#0c0c0c] border border-[#1e1e1e] rounded px-1.5 py-0.5 text-neutral-300 focus:border-bordeaux-700 focus:outline-none text-[10px]" />
+                                        </div>
+                                      </div>
+                                      {/* Actuals row */}
+                                      <div className="grid grid-cols-3 gap-1 mt-1.5 pt-1.5 border-t border-[#1a1a1a] text-[11px]">
+                                        <div className="col-span-3 text-[9px] text-neutral-600 mb-0.5">Actuals</div>
+                                        {[
+                                          { label: "Sets", val: ex.actualSets, key: "actualSets", parse: parseInt },
+                                          { label: "Reps", val: ex.actualReps, key: "actualReps", parse: parseInt },
+                                          { label: "kg", val: ex.actualLoadKg, key: "actualLoadKg", parse: parseFloat },
+                                        ].map(({ label, val, key, parse }) => (
+                                          <div key={key}>
+                                            <input type="number" value={val ?? ""} placeholder={label}
+                                              onChange={(e) => updateExercise(wIdx, dIdx, eIdx, { [key]: e.target.value ? parse(e.target.value) : null } as any)}
+                                              className="w-full bg-[#0c0c0c] border border-[#1e1e1e] rounded px-1 py-0.5 text-neutral-200 placeholder-neutral-700 focus:border-bordeaux-700 focus:outline-none text-center tabular-nums" />
+                                          </div>
+                                        ))}
+                                      </div>
+                                      {/* Actions */}
+                                      <div className="flex items-center gap-2 mt-1.5 text-[9px]">
+                                        <button onClick={(e) => { e.stopPropagation(); copyExerciseToAllWeeks(ex, day.dayNumber); }}
+                                          className="text-neutral-600 hover:text-bordeaux-500 transition-colors">Copy to all weeks</button>
+                                        {oneRM > 0 && <span className="text-neutral-700">1RM {oneRM}kg</span>}
+                                        {ex.loadKg && ex.sets > 0 && ex.reps > 0 && <span className="text-neutral-700">Vol {(ex.sets * ex.reps * ex.loadKg).toLocaleString()}kg</span>}
+                                      </div>
                                     </div>
-                                  </details>
-
-                                  <input type="text" placeholder="Notes..." value={ex.notes || ""}
-                                    onClick={(e) => e.stopPropagation()}
-                                    onChange={(e) => updateExercise(wIdx, dIdx, eIdx, { notes: e.target.value || null })}
-                                    className="mt-1 w-full bg-transparent border-b border-[#1a1a1a] text-[9px] text-neutral-600 placeholder-neutral-800 focus:border-bordeaux-700 focus:outline-none pb-0.5 print:hidden" />
+                                  )}
                                 </div>
                               );
                             })}
@@ -539,7 +545,9 @@ export default function ProgramEditorPage() {
                           )}
 
                           {day.exercises.length === 0 && !isActive && (
-                            <div className="text-[10px] text-neutral-700 py-3 text-center">Click to add</div>
+                            <div className="text-[10px] text-neutral-700 py-4 text-center border border-dashed border-[#1a1a1a] rounded-lg">
+                              + Click to add exercises
+                            </div>
                           )}
                         </td>
                       );
