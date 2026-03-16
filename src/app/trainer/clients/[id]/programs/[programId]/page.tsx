@@ -25,7 +25,6 @@ interface Program {
   client: { id: string; name: string }; weeks: ProgramWeek[];
 }
 
-// Save status type
 type SaveStatus = "idle" | "saving" | "saved";
 
 export default function ProgramEditorPage() {
@@ -51,7 +50,6 @@ export default function ProgramEditorPage() {
 
   useEffect(() => { loadProgram(); }, [loadProgram]);
 
-  // Save indicator helper
   const markSaving = () => {
     setSaveStatus("saving");
     if (saveTimer.current) clearTimeout(saveTimer.current);
@@ -72,7 +70,6 @@ export default function ProgramEditorPage() {
     markSaved();
   };
 
-  // === COPY WEEK ===
   const copyWeek = async (sourceWeekIdx: number, targetWeekIdx: number) => {
     if (!program) return;
     markSaving();
@@ -87,11 +84,10 @@ export default function ProgramEditorPage() {
     loadProgram();
   };
 
-  // === COPY EXERCISE TO ALL WEEKS ===
   const copyExerciseToAllWeeks = async (ex: ProgramExercise, dayNumber: number) => {
     if (!program) return;
     markSaving();
-    const res = await fetch(`/api/programs/${program.id}/copy-exercise`, {
+    await fetch(`/api/programs/${program.id}/copy-exercise`, {
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         exerciseId: ex.exerciseId, exerciseName: ex.exerciseName,
@@ -99,12 +95,10 @@ export default function ProgramEditorPage() {
         intensityPercent: ex.intensityPercent, loadKg: ex.loadKg, rpe: ex.rpe,
       }),
     });
-    const data = await res.json();
     markSaved();
     loadProgram();
   };
 
-  // === COMPLETE DAY ===
   const completeDay = async (dayId: string) => {
     if (!program) return;
     markSaving();
@@ -116,14 +110,12 @@ export default function ProgramEditorPage() {
     loadProgram();
   };
 
-  // === DAY LABEL ===
   const saveDayLabel = async (dayId: string, label: string) => {
     markSaving();
     await fetch(`/api/programs/${program!.id}/day-label`, {
       method: "PATCH", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ dayId, label }),
     });
-    // Update local
     if (program) {
       const prog = { ...program };
       for (const week of prog.weeks) {
@@ -137,7 +129,6 @@ export default function ProgramEditorPage() {
     markSaved();
   };
 
-  // === ADD/REMOVE DAYS ===
   const addDay = async () => {
     if (!program) return;
     markSaving();
@@ -154,7 +145,6 @@ export default function ProgramEditorPage() {
     loadProgram();
   };
 
-  // === ADD EXERCISE ===
   const addExercise = async (weekIdx: number, dayIdx: number, libEx: LibraryExercise) => {
     if (!program) return;
     const day = program.weeks[weekIdx].days[dayIdx];
@@ -193,7 +183,6 @@ export default function ProgramEditorPage() {
     markSaved();
   };
 
-  // === UPDATE EXERCISE ===
   const updateExercise = async (weekIdx: number, dayIdx: number, exIdx: number, fields: Partial<ProgramExercise>) => {
     if (!program) return;
     const ex = program.weeks[weekIdx].days[dayIdx].exercises[exIdx];
@@ -228,7 +217,6 @@ export default function ProgramEditorPage() {
     markSaved();
   };
 
-  // === REMOVE EXERCISE ===
   const removeExercise = async (weekIdx: number, dayIdx: number, exIdx: number) => {
     if (!program) return;
     const ex = program.weeks[weekIdx].days[dayIdx].exercises[exIdx];
@@ -244,7 +232,6 @@ export default function ProgramEditorPage() {
     await fetch(`/api/programs/${program.id}/exercises?exerciseId=${ex.id}`, { method: "DELETE" });
   };
 
-  // === SUGGESTIONS ===
   const getSuggestion = (weekIdx: number, dayIdx: number, exerciseId: string) => {
     if (!program || weekIdx === 0) return null;
     const prevDay = program.weeks[weekIdx - 1]?.days[dayIdx];
@@ -267,7 +254,6 @@ export default function ProgramEditorPage() {
     return Math.round(calcRelativeIntensity(pct, reps, rpeTable) * 10) / 10;
   };
 
-  // === WEEK SUMMARY ===
   const getWeekSummary = (week: ProgramWeek) => {
     let vol = 0, reps = 0, wIntS = 0, wIntD = 0;
     for (const d of week.days) for (const ex of d.exercises) {
@@ -282,10 +268,7 @@ export default function ProgramEditorPage() {
     if (activeCell) addExercise(activeCell.week, activeCell.day, { id: `custom-${Date.now()}`, name, category: "custom", muscleGroups: [] });
   };
 
-  // === PRINT ===
-  const printProgram = () => {
-    window.print();
-  };
+  const printProgram = () => { window.print(); };
 
   const allExercises = EXERCISE_LIBRARY;
   const filtered = searchQuery.length > 0
@@ -293,7 +276,6 @@ export default function ProgramEditorPage() {
     : allExercises;
   const catLabel: Record<string, string> = { powerlifting: "PL", bodybuilding: "BB", olympic: "OLY", custom: "Custom" };
 
-  // Chart data
   const summaries = program ? program.weeks.map(getWeekSummary) : [];
   const linReg = (data: { x: number; y: number }[]) => {
     const n = data.length; if (n < 2) return { slope: 0, intercept: data[0]?.y ?? 0 };
@@ -306,7 +288,11 @@ export default function ProgramEditorPage() {
     return data.map((d) => ({ ...d, trend: Math.round(r.slope * d.week + r.intercept) }));
   };
 
-  if (loading) return <div className="text-neutral-600 py-8">Loading program...</div>;
+  if (loading) return (
+    <div className="flex items-center justify-center py-20">
+      <div className="w-5 h-5 border-2 border-bordeaux-500 border-t-transparent rounded-full animate-spin" />
+    </div>
+  );
   if (!program) return <div className="text-red-500 py-8">Program not found</div>;
 
   const peakVol = summaries.reduce((a, b) => b.totalVolume > a.totalVolume ? b : a, summaries[0]);
@@ -315,52 +301,74 @@ export default function ProgramEditorPage() {
   return (
     <div className="min-h-screen print:bg-white print:text-black">
       {/* Header */}
-      <div className="mb-4 print:mb-2">
-        <div className="flex items-center gap-2 text-sm text-neutral-500 mb-1 print:hidden">
-          <Link href="/trainer/clients" className="hover:text-neutral-300">Clients</Link>
-          <span>/</span>
-          <Link href={`/trainer/clients/${program.client.id}`} className="hover:text-neutral-300">{program.client.name}</Link>
-          <span>/</span>
-          <span className="text-neutral-300">{program.name}</span>
+      <div className="mb-6 print:mb-2">
+        <div className="flex items-center gap-2 text-sm text-neutral-600 mb-3 print:hidden">
+          <Link href="/trainer/clients" className="hover:text-neutral-300 transition-colors">Clients</Link>
+          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+          <Link href={`/trainer/clients/${program.client.id}`} className="hover:text-neutral-300 transition-colors">{program.client.name}</Link>
+          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+          <span className="text-neutral-400">{program.name}</span>
         </div>
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold print:text-xl">{program.name} <span className="text-neutral-500 font-normal text-base">— {program.client.name}</span></h1>
-            <p className="text-xs text-neutral-500 mt-0.5">
-              {program.weeks.length} weeks · {program.daysPerWeek} days/week · {program.progressionIncrement} kg increments
-              {saveStatus === "saving" && <span className="ml-3 text-yellow-500">Saving...</span>}
-              {saveStatus === "saved" && <span className="ml-3 text-green-500">Saved</span>}
-            </p>
+            <h1 className="text-2xl font-bold tracking-tight print:text-xl">
+              {program.name}
+              <span className="text-neutral-500 font-normal text-base ml-2">— {program.client.name}</span>
+            </h1>
+            <div className="flex items-center gap-3 mt-1">
+              <p className="text-xs text-neutral-500">
+                {program.weeks.length} weeks · {program.daysPerWeek} days/week · {program.progressionIncrement} kg increments
+              </p>
+              {saveStatus === "saving" && (
+                <span className="flex items-center gap-1.5 text-xs text-amber-400">
+                  <div className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+                  Saving...
+                </span>
+              )}
+              {saveStatus === "saved" && (
+                <span className="flex items-center gap-1.5 text-xs text-emerald-400">
+                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
+                  Saved
+                </span>
+              )}
+            </div>
           </div>
-          <div className="flex items-center gap-2 print:hidden">
-            <button onClick={addDay} className="text-xs bg-bordeaux-700 hover:bg-bordeaux-600 text-white rounded px-3 py-1.5 transition-colors">+ Day</button>
+          <div className="flex items-center gap-1.5 print:hidden">
+            <button onClick={addDay} className="btn-primary text-xs py-1.5">+ Day</button>
             {program.daysPerWeek > 1 && (
-              <button onClick={removeDay} className="text-xs border border-neutral-700 text-neutral-400 rounded px-3 py-1.5 hover:bg-neutral-900">− Day</button>
+              <button onClick={removeDay} className="btn-ghost text-xs">− Day</button>
             )}
             <div className="w-px h-5 bg-neutral-800 mx-1" />
             {(["table", "summary", "charts"] as const).map((v) => (
               <button key={v} onClick={() => setView(v)}
-                className={`text-xs rounded px-3 py-1.5 transition-colors ${view === v ? "bg-neutral-800 text-white" : "border border-neutral-700 hover:bg-neutral-900 text-neutral-400"}`}>
+                className={`text-xs rounded-lg px-3 py-1.5 transition-all duration-200 ${
+                  view === v
+                    ? "bg-neutral-800/80 text-white"
+                    : "text-neutral-500 hover:text-neutral-300 hover:bg-neutral-800/30"
+                }`}>
                 {v.charAt(0).toUpperCase() + v.slice(1)}
               </button>
             ))}
-            <button onClick={() => setShowRPETable(!showRPETable)} className="text-xs border border-neutral-700 rounded px-3 py-1.5 hover:bg-neutral-900 text-neutral-400">RPE</button>
-            <button onClick={printProgram} className="text-xs border border-neutral-700 rounded px-3 py-1.5 hover:bg-neutral-900 text-neutral-400">Print</button>
+            <button onClick={() => setShowRPETable(!showRPETable)}
+              className={`text-xs rounded-lg px-3 py-1.5 transition-all duration-200 ${showRPETable ? "bg-neutral-800/80 text-white" : "text-neutral-500 hover:text-neutral-300 hover:bg-neutral-800/30"}`}>
+              RPE
+            </button>
+            <button onClick={printProgram} className="btn-ghost text-xs">Print</button>
           </div>
         </div>
       </div>
 
       {/* 1RM Bar */}
       {Object.keys(program.oneRMs).length > 0 && (
-        <div className="bg-neutral-950 border border-neutral-800 rounded-lg p-3 mb-4 print:hidden">
-          <h3 className="text-[10px] font-semibold text-neutral-500 uppercase tracking-wider mb-2">1RM (kg)</h3>
+        <div className="card p-3 mb-4 print:hidden">
+          <h3 className="section-title mb-2">1RM (kg)</h3>
           <div className="flex flex-wrap gap-2">
             {Object.entries(program.oneRMs).map(([exId, rm]) => (
-              <div key={exId} className="flex items-center gap-1 bg-neutral-900 rounded px-2.5 py-1.5 border border-neutral-800">
+              <div key={exId} className="flex items-center gap-1.5 bg-neutral-800/40 rounded-lg px-2.5 py-1.5 border border-neutral-700/30">
                 <span className="text-[11px] text-neutral-300">{allExercises.find((e) => e.id === exId)?.name || exId}</span>
                 <input type="number" min={0} step={2.5} value={rm || ""}
                   onChange={(e) => saveOneRMs({ ...program.oneRMs, [exId]: parseFloat(e.target.value) || 0 })}
-                  className="w-14 bg-neutral-950 border border-neutral-700 rounded px-1.5 py-0.5 text-xs text-white font-mono focus:border-bordeaux-500 focus:outline-none text-center" />
+                  className="w-14 bg-neutral-900/80 border border-neutral-700/40 rounded-md px-1.5 py-0.5 text-xs text-white font-mono focus:border-bordeaux-500 focus:outline-none text-center" />
               </div>
             ))}
           </div>
@@ -369,22 +377,22 @@ export default function ProgramEditorPage() {
 
       {/* RPE Table */}
       {showRPETable && (
-        <div className="bg-neutral-950 border border-neutral-800 rounded-lg p-4 mb-4 overflow-x-auto print:hidden">
-          <div className="flex items-center justify-between mb-2">
+        <div className="card p-4 mb-4 overflow-x-auto print:hidden">
+          <div className="flex items-center justify-between mb-3">
             <h3 className="text-sm font-medium text-neutral-300">RPE Chart — %1RM by Reps</h3>
-            <button onClick={() => setRpeTable({ ...DEFAULT_RPE_TABLE })} className="text-[10px] text-neutral-600 hover:text-neutral-400">Reset</button>
+            <button onClick={() => setRpeTable({ ...DEFAULT_RPE_TABLE })} className="text-[10px] text-neutral-600 hover:text-neutral-400 transition-colors">Reset</button>
           </div>
           <table className="w-full text-xs border-collapse">
             <thead><tr><th className="text-left text-neutral-500 p-1 w-16">RPE</th>
               {REP_RANGE.map((r) => <th key={r} className="text-center text-neutral-500 p-1">{r}</th>)}
             </tr></thead>
             <tbody>{RPE_VALUES.map((rpe) => (
-              <tr key={rpe} className={rpe >= 9 ? "bg-red-900/10" : rpe >= 8 ? "bg-yellow-900/10" : "bg-green-900/10"}>
+              <tr key={rpe} className={rpe >= 9 ? "bg-red-950/20" : rpe >= 8 ? "bg-amber-950/20" : "bg-emerald-950/10"}>
                 <td className="font-mono text-neutral-300 p-1 font-medium">{rpe}</td>
                 {rpeTable[rpe].map((val, i) => (
                   <td key={i} className="p-0.5"><input type="number" value={val}
                     onChange={(e) => { const t = { ...rpeTable }; t[rpe] = [...t[rpe]]; t[rpe][i] = parseInt(e.target.value) || 0; setRpeTable(t); }}
-                    className="w-full text-center bg-transparent border border-neutral-800 rounded px-1 py-0.5 text-neutral-200 focus:border-bordeaux-500 focus:outline-none" /></td>
+                    className="w-full text-center bg-transparent border border-neutral-800/40 rounded-md px-1 py-0.5 text-neutral-200 focus:border-bordeaux-500 focus:outline-none" /></td>
                 ))}
               </tr>
             ))}</tbody>
@@ -397,44 +405,44 @@ export default function ProgramEditorPage() {
         <div className="space-y-6 print:hidden">
           <div>
             <h3 className="text-sm font-medium text-neutral-400 mb-2">Volume (kg) by Week</h3>
-            <div className="h-48 bg-neutral-950 rounded-lg border border-neutral-800 p-2">
+            <div className="h-52 card p-4">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={addTrend(summaries.map((s) => ({ week: s.weekNumber, value: s.totalVolume })))} margin={{ top: 5, right: 20, bottom: 5, left: 10 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#262626" />
-                  <XAxis dataKey="week" tick={{ fill: "#666", fontSize: 11 }} tickFormatter={(v) => `W${v}`} />
-                  <YAxis tick={{ fill: "#666", fontSize: 11 }} />
-                  <Tooltip contentStyle={{ background: "#171717", border: "1px solid #333", borderRadius: 8, fontSize: 12 }} />
-                  <Line type="monotone" dataKey="value" stroke="#7a1b3e" strokeWidth={2} dot={{ fill: "#7a1b3e", r: 3 }} name="Volume" />
-                  <Line type="monotone" dataKey="trend" stroke="#555" strokeWidth={1} strokeDasharray="5 5" dot={false} name="Trend" />
-                  {peakVol && <ReferenceDot x={peakVol.weekNumber} y={peakVol.totalVolume} r={6} fill="#a3254f" stroke="#fff" strokeWidth={2} />}
+                  <CartesianGrid strokeDasharray="3 3" stroke="#1a1a1a" />
+                  <XAxis dataKey="week" tick={{ fill: "#555", fontSize: 11 }} tickFormatter={(v) => `W${v}`} />
+                  <YAxis tick={{ fill: "#555", fontSize: 11 }} />
+                  <Tooltip contentStyle={{ background: "#0f0f0f", border: "1px solid #262626", borderRadius: 10, fontSize: 12 }} />
+                  <Line type="monotone" dataKey="value" stroke="#a91d49" strokeWidth={2} dot={{ fill: "#a91d49", r: 3 }} name="Volume" />
+                  <Line type="monotone" dataKey="trend" stroke="#444" strokeWidth={1} strokeDasharray="5 5" dot={false} name="Trend" />
+                  {peakVol && <ReferenceDot x={peakVol.weekNumber} y={peakVol.totalVolume} r={6} fill="#c9295a" stroke="#fff" strokeWidth={2} />}
                 </LineChart>
               </ResponsiveContainer>
             </div>
           </div>
           <div>
             <h3 className="text-sm font-medium text-neutral-400 mb-2">Avg Intensity (%1RM) by Week</h3>
-            <div className="h-48 bg-neutral-950 rounded-lg border border-neutral-800 p-2">
+            <div className="h-52 card p-4">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={addTrend(summaries.map((s) => ({ week: s.weekNumber, value: s.avgIntensity })))} margin={{ top: 5, right: 20, bottom: 5, left: 10 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#262626" />
-                  <XAxis dataKey="week" tick={{ fill: "#666", fontSize: 11 }} tickFormatter={(v) => `W${v}`} />
-                  <YAxis tick={{ fill: "#666", fontSize: 11 }} domain={[50, 100]} />
-                  <Tooltip contentStyle={{ background: "#171717", border: "1px solid #333", borderRadius: 8, fontSize: 12 }} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#1a1a1a" />
+                  <XAxis dataKey="week" tick={{ fill: "#555", fontSize: 11 }} tickFormatter={(v) => `W${v}`} />
+                  <YAxis tick={{ fill: "#555", fontSize: 11 }} domain={[50, 100]} />
+                  <Tooltip contentStyle={{ background: "#0f0f0f", border: "1px solid #262626", borderRadius: 10, fontSize: 12 }} />
                   <Line type="monotone" dataKey="value" stroke="#d4a855" strokeWidth={2} dot={{ fill: "#d4a855", r: 3 }} name="Avg %1RM" />
-                  <Line type="monotone" dataKey="trend" stroke="#555" strokeWidth={1} strokeDasharray="5 5" dot={false} name="Trend" />
+                  <Line type="monotone" dataKey="trend" stroke="#444" strokeWidth={1} strokeDasharray="5 5" dot={false} name="Trend" />
                   {peakInt && <ReferenceDot x={peakInt.weekNumber} y={peakInt.avgIntensity} r={6} fill="#d4a855" stroke="#fff" strokeWidth={2} />}
                 </LineChart>
               </ResponsiveContainer>
             </div>
           </div>
           <div className="grid grid-cols-2 gap-4">
-            <div className="bg-neutral-950 border border-neutral-800 rounded-lg p-4">
-              <h4 className="text-xs text-neutral-500 mb-2">Peak Volume</h4>
+            <div className="card p-5">
+              <h4 className="text-xs text-neutral-500 mb-1">Peak Volume</h4>
               <p className="text-lg font-mono text-bordeaux-400">W{peakVol?.weekNumber} — {peakVol?.totalVolume.toLocaleString()} kg</p>
             </div>
-            <div className="bg-neutral-950 border border-neutral-800 rounded-lg p-4">
-              <h4 className="text-xs text-neutral-500 mb-2">Peak Intensity</h4>
-              <p className="text-lg font-mono text-yellow-400">W{peakInt?.weekNumber} — {peakInt?.avgIntensity}%</p>
+            <div className="card p-5">
+              <h4 className="text-xs text-neutral-500 mb-1">Peak Intensity</h4>
+              <p className="text-lg font-mono text-amber-400">W{peakInt?.weekNumber} — {peakInt?.avgIntensity}%</p>
             </div>
           </div>
         </div>
@@ -442,11 +450,11 @@ export default function ProgramEditorPage() {
 
       {/* === SUMMARY VIEW === */}
       {view === "summary" && (
-        <div className="space-y-2">
+        <div className="space-y-1.5">
           {program.weeks.map((week) => {
             const s = getWeekSummary(week);
             return (
-              <div key={week.id} className="flex items-center gap-4 bg-neutral-950 border border-neutral-800 rounded-lg px-4 py-3">
+              <div key={week.id} className="flex items-center gap-4 card px-5 py-3.5">
                 <span className="text-sm font-mono text-neutral-400 w-12">W{week.weekNumber}</span>
                 <div className="flex-1 grid grid-cols-3 gap-4 text-xs">
                   <div><span className="text-neutral-500">Volume</span> <span className="text-neutral-200 font-mono ml-1">{s.totalVolume.toLocaleString()} kg</span></div>
@@ -461,11 +469,11 @@ export default function ProgramEditorPage() {
 
       {/* === TABLE VIEW === */}
       {view === "table" && (
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto -mx-6 px-6">
           <table className="w-full border-collapse">
             <thead>
               <tr>
-                <th className="text-left text-xs text-neutral-500 p-2 w-20 sticky left-0 bg-black z-10 print:bg-white">Week</th>
+                <th className="text-left text-xs text-neutral-600 font-medium p-2 w-20 sticky left-0 bg-neutral-950 z-10 print:bg-white">Week</th>
                 {Array.from({ length: program.daysPerWeek }, (_, i) => {
                   const firstWeekDay = program.weeks[0]?.days[i];
                   const label = firstWeekDay?.label;
@@ -476,18 +484,18 @@ export default function ProgramEditorPage() {
                           onChange={(e) => setEditingLabel({ ...editingLabel, value: e.target.value })}
                           onBlur={() => saveDayLabel(firstWeekDay.id, editingLabel.value)}
                           onKeyDown={(e) => { if (e.key === "Enter") saveDayLabel(firstWeekDay.id, editingLabel.value); }}
-                          className="bg-neutral-900 border border-bordeaux-500 rounded px-2 py-0.5 text-xs text-white focus:outline-none w-32" />
+                          className="bg-neutral-900 border border-bordeaux-500 rounded-md px-2 py-0.5 text-xs text-white focus:outline-none w-32" />
                       ) : (
-                        <span className="cursor-pointer hover:text-neutral-300"
+                        <span className="cursor-pointer hover:text-neutral-300 transition-colors group/label"
                           onClick={() => setEditingLabel({ dayId: firstWeekDay?.id || "", value: label || "" })}>
                           {label || `Day ${i + 1}`}
-                          <span className="text-neutral-700 ml-1 text-[9px]">edit</span>
+                          <span className="text-neutral-700 ml-1.5 text-[9px] opacity-0 group-hover/label:opacity-100 transition-opacity">edit</span>
                         </span>
                       )}
                     </th>
                   );
                 })}
-                <th className="text-left text-xs text-neutral-500 p-2 w-52 print:hidden">Summary</th>
+                <th className="text-left text-xs text-neutral-600 font-medium p-2 w-52 print:hidden">Summary</th>
               </tr>
             </thead>
             <tbody>
@@ -495,21 +503,20 @@ export default function ProgramEditorPage() {
                 const summary = getWeekSummary(week);
                 const hasExercises = week.days.some((d) => d.exercises.length > 0);
                 return (
-                  <tr key={week.id} className="border-t border-neutral-900 align-top print:break-inside-avoid">
-                    <td className="text-sm font-mono text-neutral-400 p-2 sticky left-0 bg-black z-10 print:bg-white">
-                      <div>W{week.weekNumber}</div>
-                      {/* Copy week buttons */}
-                      <div className="mt-1 space-y-0.5 print:hidden">
+                  <tr key={week.id} className="border-t border-neutral-800/30 align-top print:break-inside-avoid">
+                    <td className="text-sm font-mono text-neutral-500 p-2 sticky left-0 bg-neutral-950 z-10 print:bg-white">
+                      <div className="font-medium">W{week.weekNumber}</div>
+                      <div className="mt-1.5 space-y-0.5 print:hidden">
                         {wIdx > 0 && !hasExercises && (
                           <button onClick={() => copyWeek(wIdx - 1, wIdx)}
-                            className="text-[9px] text-bordeaux-400 hover:text-bordeaux-300 block">
-                            ← Copy W{week.weekNumber - 1}
+                            className="text-[9px] text-bordeaux-400/70 hover:text-bordeaux-400 block transition-colors">
+                            Copy W{week.weekNumber - 1}
                           </button>
                         )}
                         {wIdx < program.weeks.length - 1 && hasExercises && (
                           <button onClick={() => copyWeek(wIdx, wIdx + 1)}
-                            className="text-[9px] text-neutral-600 hover:text-neutral-400 block">
-                            Copy → W{week.weekNumber + 1}
+                            className="text-[9px] text-neutral-600 hover:text-neutral-400 block transition-colors">
+                            Copy to W{week.weekNumber + 1}
                           </button>
                         )}
                       </div>
@@ -519,7 +526,9 @@ export default function ProgramEditorPage() {
                       const dayComplete = day.exercises.length > 0 && day.exercises.every((e) => e.actualSets !== null);
                       return (
                         <td key={day.id}
-                          className={`p-2 border-l border-neutral-900 cursor-pointer transition-colors ${isActive ? "bg-neutral-950" : "hover:bg-neutral-950/50"} ${dayComplete ? "bg-green-950/10" : ""}`}
+                          className={`p-2 border-l border-neutral-800/20 cursor-pointer transition-all duration-150 ${
+                            isActive ? "bg-neutral-900/60" : "hover:bg-neutral-900/30"
+                          } ${dayComplete ? "bg-emerald-950/5" : ""}`}
                           onClick={() => { setActiveCell({ week: wIdx, day: dIdx }); setShowSearch(false); setSearchQuery(""); }}>
 
                           <div className="space-y-1.5">
@@ -529,23 +538,27 @@ export default function ProgramEditorPage() {
                               const suggestion = getSuggestion(wIdx, dIdx, ex.exerciseId);
 
                               return (
-                                <div key={ex.id} className={`bg-neutral-900/50 border rounded p-2 transition-colors ${ex.actualSets !== null ? "border-green-900/30" : "border-neutral-800 hover:border-neutral-700"}`}>
-                                  <div className="flex items-center justify-between mb-1">
-                                    <span className="text-xs font-medium text-neutral-100">{ex.exerciseName}</span>
-                                    <div className="flex items-center gap-1.5 print:hidden">
+                                <div key={ex.id} className={`rounded-lg p-2.5 transition-all duration-150 ${
+                                  ex.actualSets !== null
+                                    ? "bg-emerald-900/10 border border-emerald-800/20"
+                                    : "bg-neutral-800/20 border border-neutral-800/30 hover:border-neutral-700/40"
+                                }`}>
+                                  <div className="flex items-center justify-between mb-1.5">
+                                    <span className="text-xs font-semibold text-neutral-100">{ex.exerciseName}</span>
+                                    <div className="flex items-center gap-2 print:hidden">
                                       <button onClick={(e) => { e.stopPropagation(); copyExerciseToAllWeeks(ex, day.dayNumber); }}
-                                        className="text-[9px] text-neutral-700 hover:text-bordeaux-400" title="Copy to all weeks">
-                                        ⇊ all
+                                        className="text-[9px] text-neutral-700 hover:text-bordeaux-400 transition-colors" title="Copy to all weeks">
+                                        all weeks
                                       </button>
                                       <button onClick={(e) => { e.stopPropagation(); removeExercise(wIdx, dIdx, eIdx); }}
-                                        className="text-neutral-700 hover:text-red-500 text-[10px]">×</button>
+                                        className="text-neutral-700 hover:text-red-400 text-xs transition-colors">x</button>
                                     </div>
                                   </div>
 
                                   {suggestion && !ex.loadKg && (
                                     <button onClick={(e) => { e.stopPropagation(); updateExercise(wIdx, dIdx, eIdx, suggestion); }}
-                                      className="text-[9px] text-bordeaux-400 hover:text-bordeaux-300 mb-1 block print:hidden">
-                                      Suggest: {suggestion.sets}×{suggestion.reps} @ {suggestion.loadKg} kg
+                                      className="text-[10px] text-bordeaux-400/80 hover:text-bordeaux-300 mb-1.5 block print:hidden transition-colors">
+                                      Suggest: {suggestion.sets}x{suggestion.reps} @ {suggestion.loadKg} kg
                                     </button>
                                   )}
 
@@ -557,45 +570,45 @@ export default function ProgramEditorPage() {
                                       { label: "kg", val: ex.loadKg, key: "loadKg", parse: parseFloat },
                                     ].map(({ label, val, key, parse }) => (
                                       <div key={key}>
-                                        <label className="text-neutral-600 block">{label}</label>
+                                        <label className="text-neutral-600 text-[10px] block mb-0.5">{label}</label>
                                         <input type="number" value={val ?? ""} onClick={(e) => e.stopPropagation()}
                                           onChange={(e) => updateExercise(wIdx, dIdx, eIdx, { [key]: e.target.value ? parse(e.target.value) : null } as any)}
-                                          className="w-full bg-neutral-900 border border-neutral-800 rounded px-1 py-0.5 text-neutral-100 focus:border-bordeaux-500 focus:outline-none text-center print:border-gray-300" />
+                                          className="w-full bg-neutral-900/60 border border-neutral-700/30 rounded-md px-1 py-0.5 text-neutral-100 focus:border-bordeaux-500 focus:outline-none text-center print:border-gray-300" />
                                       </div>
                                     ))}
                                     <div>
-                                      <label className="text-neutral-600 block">RPE</label>
+                                      <label className="text-neutral-600 text-[10px] block mb-0.5">RPE</label>
                                       <select value={ex.rpe ?? ""} onClick={(e) => e.stopPropagation()}
                                         onChange={(e) => updateExercise(wIdx, dIdx, eIdx, { rpe: e.target.value ? parseFloat(e.target.value) : null })}
-                                        className="w-full bg-neutral-900 border border-neutral-800 rounded px-0 py-0.5 text-neutral-100 focus:border-bordeaux-500 focus:outline-none text-center print:border-gray-300">
+                                        className="w-full bg-neutral-900/60 border border-neutral-700/30 rounded-md px-0 py-0.5 text-neutral-100 focus:border-bordeaux-500 focus:outline-none text-center print:border-gray-300">
                                         <option value="">—</option>
                                         {RPE_VALUES.map((v) => <option key={v} value={v}>{v}</option>)}
                                       </select>
                                     </div>
                                     <div>
-                                      <label className="text-neutral-600 block">RI%</label>
+                                      <label className="text-neutral-600 text-[10px] block mb-0.5">RI%</label>
                                       <div className="px-1 py-0.5 text-neutral-500 text-center">{ri ? `${ri}%` : "—"}</div>
                                     </div>
                                   </div>
 
-                                  <div className="flex items-center gap-2 mt-0.5 text-[9px] text-neutral-600">
+                                  <div className="flex items-center gap-2 mt-1 text-[9px] text-neutral-600">
                                     {oneRM > 0 && <span>1RM: {oneRM}kg</span>}
                                     {ex.loadKg && ex.sets > 0 && ex.reps > 0 && <span>Vol: {(ex.sets * ex.reps * ex.loadKg).toLocaleString()}kg</span>}
                                   </div>
 
-                                  <details className="mt-0.5 print:hidden" onClick={(e) => e.stopPropagation()}>
-                                    <summary className="text-[9px] text-neutral-700 cursor-pointer hover:text-neutral-500">Log actuals</summary>
-                                    <div className="grid grid-cols-3 gap-1 mt-1 text-[11px]">
+                                  <details className="mt-1 print:hidden" onClick={(e) => e.stopPropagation()}>
+                                    <summary className="text-[9px] text-neutral-700 cursor-pointer hover:text-neutral-500 transition-colors">Log actuals</summary>
+                                    <div className="grid grid-cols-3 gap-1 mt-1.5 text-[11px]">
                                       {[
                                         { label: "Sets", val: ex.actualSets, key: "actualSets", parse: parseInt },
                                         { label: "Reps", val: ex.actualReps, key: "actualReps", parse: parseInt },
                                         { label: "kg", val: ex.actualLoadKg, key: "actualLoadKg", parse: parseFloat },
                                       ].map(({ label, val, key, parse }) => (
                                         <div key={key}>
-                                          <label className="text-neutral-600 block">{label}</label>
+                                          <label className="text-neutral-600 text-[10px] block mb-0.5">{label}</label>
                                           <input type="number" value={val ?? ""}
                                             onChange={(e) => updateExercise(wIdx, dIdx, eIdx, { [key]: e.target.value ? parse(e.target.value) : null } as any)}
-                                            className="w-full bg-neutral-900 border border-neutral-800 rounded px-1 py-0.5 text-neutral-100 focus:border-bordeaux-500 focus:outline-none text-center" />
+                                            className="w-full bg-neutral-900/60 border border-neutral-700/30 rounded-md px-1 py-0.5 text-neutral-100 focus:border-bordeaux-500 focus:outline-none text-center" />
                                         </div>
                                       ))}
                                     </div>
@@ -604,7 +617,7 @@ export default function ProgramEditorPage() {
                                   <input type="text" placeholder="Notes..." value={ex.notes || ""}
                                     onClick={(e) => e.stopPropagation()}
                                     onChange={(e) => updateExercise(wIdx, dIdx, eIdx, { notes: e.target.value || null })}
-                                    className="mt-0.5 w-full bg-transparent border-b border-neutral-800/50 text-[9px] text-neutral-500 placeholder-neutral-800 focus:border-bordeaux-500 focus:outline-none pb-0.5 print:hidden" />
+                                    className="mt-1 w-full bg-transparent border-b border-neutral-800/30 text-[9px] text-neutral-500 placeholder-neutral-800 focus:border-bordeaux-500 focus:outline-none pb-0.5 print:hidden" />
                                 </div>
                               );
                             })}
@@ -614,15 +627,15 @@ export default function ProgramEditorPage() {
                           {isActive && (
                             <div className="mt-2 space-y-1 print:hidden" onClick={(e) => e.stopPropagation()}>
                               {!showSearch ? (
-                                <div className="flex gap-1">
+                                <div className="flex gap-1.5">
                                   <button onClick={() => setShowSearch(true)}
-                                    className="flex-1 text-xs text-neutral-600 hover:text-bordeaux-400 border border-dashed border-neutral-800 hover:border-bordeaux-800 rounded py-1.5 transition-colors">
+                                    className="flex-1 text-xs text-neutral-600 hover:text-bordeaux-400 border border-dashed border-neutral-800/50 hover:border-bordeaux-800/50 rounded-lg py-2 transition-all duration-200">
                                     + Add Exercise
                                   </button>
                                   {day.exercises.length > 0 && !dayComplete && (
                                     <button onClick={() => completeDay(day.id)}
-                                      className="text-[10px] bg-green-900/30 text-green-400 border border-green-900/50 rounded px-2 py-1.5 hover:bg-green-900/50 transition-colors">
-                                      ✓ Complete
+                                      className="text-[10px] bg-emerald-900/20 text-emerald-400 border border-emerald-800/30 rounded-lg px-2.5 py-2 hover:bg-emerald-900/30 transition-all duration-200">
+                                      Complete
                                     </button>
                                   )}
                                 </div>
@@ -630,37 +643,37 @@ export default function ProgramEditorPage() {
                                 <div className="space-y-1">
                                   <input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
                                     placeholder="Search exercises..." autoFocus
-                                    className="w-full bg-neutral-900 border border-neutral-700 rounded px-2.5 py-1.5 text-xs text-neutral-100 placeholder-neutral-500 focus:border-bordeaux-500 focus:outline-none" />
-                                  <div className="max-h-48 overflow-y-auto bg-neutral-900 border border-neutral-800 rounded">
+                                    className="input-field text-xs py-1.5" />
+                                  <div className="max-h-48 overflow-y-auto card">
                                     {filtered.slice(0, 20).map((ex) => (
                                       <button key={ex.id} onClick={() => addExercise(wIdx, dIdx, ex)}
-                                        className="w-full text-left px-2.5 py-1.5 hover:bg-neutral-800 flex justify-between items-center text-xs">
+                                        className="w-full text-left px-3 py-2 hover:bg-neutral-800/50 flex justify-between items-center text-xs transition-colors first:rounded-t-xl last:rounded-b-xl">
                                         <span className="text-neutral-200">{ex.name}</span>
-                                        <span className="text-[9px] px-1 py-0.5 rounded bg-neutral-800 text-neutral-500 uppercase">{catLabel[ex.category]}</span>
+                                        <span className="text-[9px] px-1.5 py-0.5 rounded-md bg-neutral-800/50 text-neutral-500 uppercase">{catLabel[ex.category]}</span>
                                       </button>
                                     ))}
                                     {filtered.length === 0 && searchQuery && (
                                       <button onClick={() => addCustomExercise(searchQuery)}
-                                        className="w-full text-left px-2.5 py-1.5 hover:bg-neutral-800 text-xs text-bordeaux-400">
+                                        className="w-full text-left px-3 py-2 hover:bg-neutral-800/50 text-xs text-bordeaux-400 rounded-xl">
                                         + Add &quot;{searchQuery}&quot; as custom exercise
                                       </button>
                                     )}
                                   </div>
                                   <button onClick={() => { setShowSearch(false); setSearchQuery(""); }}
-                                    className="text-[10px] text-neutral-600 hover:text-neutral-400">Cancel</button>
+                                    className="text-[10px] text-neutral-600 hover:text-neutral-400 transition-colors">Cancel</button>
                                 </div>
                               )}
                             </div>
                           )}
 
                           {day.exercises.length === 0 && !isActive && (
-                            <div className="text-[10px] text-neutral-700 py-3 text-center">Click to add</div>
+                            <div className="text-[10px] text-neutral-700 py-4 text-center">Click to add</div>
                           )}
                         </td>
                       );
                     })}
-                    <td className="p-2 border-l border-neutral-900 align-top print:hidden">
-                      <div className="text-[11px] space-y-1 bg-neutral-950 rounded p-2 border border-neutral-800">
+                    <td className="p-2 border-l border-neutral-800/20 align-top print:hidden">
+                      <div className="text-[11px] space-y-1.5 card p-3">
                         <div><span className="text-neutral-600">Vol</span> <span className="text-neutral-300 font-mono ml-1">{summary.totalVolume.toLocaleString()} kg</span></div>
                         <div><span className="text-neutral-600">Reps</span> <span className="text-neutral-300 font-mono ml-1">{summary.totalReps}</span></div>
                         <div><span className="text-neutral-600">%</span> <span className="text-neutral-300 font-mono ml-1">{summary.avgIntensity > 0 ? `${summary.avgIntensity}%` : "—"}</span></div>

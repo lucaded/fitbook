@@ -43,77 +43,84 @@ export default function ClientsPage() {
     loadClients();
   };
 
+  const filtered = clients.filter((c) => {
+    if (!search.trim()) return true;
+    const q = search.toLowerCase();
+    return c.name.toLowerCase().includes(q) || (c.email && c.email.toLowerCase().includes(q)) || (c.phone && c.phone.includes(q));
+  });
+
   return (
     <div>
-      <div className="flex items-center justify-between mb-2">
-        <h1 className="text-2xl font-bold">Clients</h1>
-        <button
-          onClick={() => setShowAdd(!showAdd)}
-          className="bg-bordeaux-700 hover:bg-bordeaux-600 text-white text-sm px-4 py-2 rounded-lg transition-colors"
-        >
+      <div className="flex items-center justify-between mb-1">
+        <h1 className="text-2xl font-bold tracking-tight">Clients</h1>
+        <button onClick={() => setShowAdd(!showAdd)} className="btn-primary text-sm">
           {showAdd ? "Cancel" : "+ Add Client"}
         </button>
       </div>
-      <p className="text-sm text-neutral-500 mb-4">Add and manage your clients. Click a client to view their profile and programs.</p>
+      <p className="text-sm text-neutral-500 mb-6">Manage your clients. Click a client to view their profile and programs.</p>
 
       {/* Search */}
       {clients.length > 0 && (
-        <input
-          type="text"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search clients by name, email, or phone..."
-          className="w-full bg-neutral-950 border border-neutral-800 rounded-lg px-4 py-2.5 text-sm text-neutral-100 focus:border-bordeaux-500 focus:outline-none mb-4 placeholder-neutral-600"
-        />
+        <div className="relative mb-5">
+          <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search by name, email, or phone..."
+            className="input-field pl-10"
+          />
+        </div>
       )}
 
       {/* Add Client Form */}
       {showAdd && (
-        <div className="bg-neutral-950 border border-neutral-800 rounded-lg p-5 mb-6">
-          <h3 className="text-sm font-medium text-neutral-300 mb-3">New Client</h3>
+        <div className="card p-5 mb-6">
+          <h3 className="text-sm font-semibold text-neutral-200 mb-4">New Client</h3>
           <div className="grid grid-cols-3 gap-3 mb-3">
             <div>
-              <label className="text-xs text-neutral-500 block mb-1">Name *</label>
+              <label className="label">Name *</label>
               <input type="text" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })}
-                className="w-full bg-neutral-900 border border-neutral-800 rounded px-3 py-2 text-sm text-neutral-100 focus:border-bordeaux-500 focus:outline-none" placeholder="Client name" />
+                className="input-field" placeholder="Client name" />
             </div>
             <div>
-              <label className="text-xs text-neutral-500 block mb-1">Email</label>
+              <label className="label">Email</label>
               <input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })}
-                className="w-full bg-neutral-900 border border-neutral-800 rounded px-3 py-2 text-sm text-neutral-100 focus:border-bordeaux-500 focus:outline-none" placeholder="email@example.com" />
+                className="input-field" placeholder="email@example.com" />
             </div>
             <div>
-              <label className="text-xs text-neutral-500 block mb-1">Phone</label>
+              <label className="label">Phone</label>
               <input type="tel" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                className="w-full bg-neutral-900 border border-neutral-800 rounded px-3 py-2 text-sm text-neutral-100 focus:border-bordeaux-500 focus:outline-none" placeholder="+39..." />
+                className="input-field" placeholder="+39..." />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3 mb-3">
             <div>
-              <label className="text-xs text-neutral-500 block mb-1">Height (cm)</label>
+              <label className="label">Height (cm)</label>
               <input type="number" value={form.height} onChange={(e) => setForm({ ...form, height: e.target.value })}
-                className="w-full bg-neutral-900 border border-neutral-800 rounded px-3 py-2 text-sm text-neutral-100 focus:border-bordeaux-500 focus:outline-none" />
+                className="input-field" />
             </div>
             <div>
-              <label className="text-xs text-neutral-500 block mb-1">Weight (kg)</label>
+              <label className="label">Weight (kg)</label>
               <input type="number" value={form.weight} onChange={(e) => setForm({ ...form, weight: e.target.value })}
-                className="w-full bg-neutral-900 border border-neutral-800 rounded px-3 py-2 text-sm text-neutral-100 focus:border-bordeaux-500 focus:outline-none" />
+                className="input-field" />
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-3 mb-4">
+          <div className="grid grid-cols-2 gap-3 mb-5">
             <div>
-              <label className="text-xs text-neutral-500 block mb-1">Goals</label>
+              <label className="label">Goals</label>
               <textarea value={form.goals} onChange={(e) => setForm({ ...form, goals: e.target.value })} rows={2}
-                className="w-full bg-neutral-900 border border-neutral-800 rounded px-3 py-2 text-sm text-neutral-100 focus:border-bordeaux-500 focus:outline-none" placeholder="Training goals..." />
+                className="input-field" placeholder="Training goals..." />
             </div>
             <div>
-              <label className="text-xs text-neutral-500 block mb-1">Injuries / Notes</label>
+              <label className="label">Injuries / Notes</label>
               <textarea value={form.injuries} onChange={(e) => setForm({ ...form, injuries: e.target.value })} rows={2}
-                className="w-full bg-neutral-900 border border-neutral-800 rounded px-3 py-2 text-sm text-neutral-100 focus:border-bordeaux-500 focus:outline-none" placeholder="Any injuries or relevant info..." />
+                className="input-field" placeholder="Any injuries or relevant info..." />
             </div>
           </div>
-          <button onClick={addClient} disabled={saving || !form.name.trim()}
-            className="bg-bordeaux-700 hover:bg-bordeaux-600 disabled:opacity-50 text-white text-sm px-5 py-2 rounded-lg transition-colors">
+          <button onClick={addClient} disabled={saving || !form.name.trim()} className="btn-primary disabled:opacity-40">
             {saving ? "Saving..." : "Add Client"}
           </button>
         </div>
@@ -121,34 +128,37 @@ export default function ClientsPage() {
 
       {/* Client List */}
       {loading ? (
-        <p className="text-neutral-600 text-sm">Loading...</p>
+        <div className="flex items-center justify-center py-12">
+          <div className="w-5 h-5 border-2 border-neutral-700 border-t-transparent rounded-full animate-spin" />
+        </div>
       ) : clients.length === 0 ? (
-        <div className="bg-neutral-950 border border-neutral-800 rounded-lg p-8 text-center">
+        <div className="card px-6 py-12 text-center">
           <p className="text-neutral-500 mb-2">No clients yet</p>
           <p className="text-xs text-neutral-600">Click &quot;+ Add Client&quot; to get started</p>
         </div>
       ) : (
-        <div className="space-y-2">
-          {clients.filter((c) => {
-            if (!search.trim()) return true;
-            const q = search.toLowerCase();
-            return c.name.toLowerCase().includes(q) || (c.email && c.email.toLowerCase().includes(q)) || (c.phone && c.phone.includes(q));
-          }).map((client) => (
+        <div className="space-y-1.5">
+          {filtered.map((client) => (
             <Link key={client.id} href={`/trainer/clients/${client.id}`}
-              className="flex items-center justify-between bg-neutral-950 border border-neutral-800 rounded-lg px-5 py-4 hover:border-neutral-700 transition-colors group">
+              className="flex items-center justify-between card-hover px-5 py-4 group">
               <div className="flex items-center gap-3">
-                <div className={`w-2.5 h-2.5 rounded-full ${client.active ? "bg-green-500" : "bg-neutral-600"}`} />
+                <div className={`w-2 h-2 rounded-full ${client.active ? "bg-emerald-400" : "bg-neutral-600"}`} />
                 <div>
                   <p className="text-sm font-medium group-hover:text-white transition-colors">{client.name}</p>
-                  {client.email && <p className="text-xs text-neutral-600">{client.email}</p>}
+                  {client.email && <p className="text-xs text-neutral-600 mt-0.5">{client.email}</p>}
                 </div>
               </div>
               <div className="flex items-center gap-5 text-xs text-neutral-500">
                 <span>{client._count.programs} programs</span>
-                <span className="text-neutral-700 group-hover:text-neutral-500">→</span>
+                <svg className="w-4 h-4 text-neutral-700 group-hover:text-neutral-400 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5l7 7-7 7" />
+                </svg>
               </div>
             </Link>
           ))}
+          {filtered.length === 0 && search && (
+            <div className="text-center py-8 text-sm text-neutral-600">No clients match &quot;{search}&quot;</div>
+          )}
         </div>
       )}
     </div>

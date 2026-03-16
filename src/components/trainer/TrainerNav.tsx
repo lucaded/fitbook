@@ -15,14 +15,14 @@ export function TrainerNav() {
   const { data: session } = useSession();
 
   return (
-    <nav className="bg-neutral-950 border-b border-neutral-800">
-      <div className="max-w-7xl mx-auto px-4">
+    <nav className="sticky top-0 z-50 bg-neutral-950/80 backdrop-blur-xl border-b border-neutral-800/40">
+      <div className="max-w-7xl mx-auto px-6">
         <div className="flex justify-between h-14 items-center">
-          <div className="flex items-center gap-6">
-            <Link href="/trainer" className="text-lg font-bold text-bordeaux-500 tracking-tight">
-              FitBook
+          <div className="flex items-center gap-8">
+            <Link href="/trainer" className="text-lg font-bold tracking-tight">
+              <span className="text-bordeaux-500">Fit</span><span className="text-white">Book</span>
             </Link>
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-0.5">
               {links.map((link) => {
                 const active = link.exact
                   ? pathname === link.href
@@ -31,13 +31,16 @@ export function TrainerNav() {
                   <Link
                     key={link.href}
                     href={link.href}
-                    className={`text-sm px-3 py-1.5 rounded transition-colors ${
+                    className={`relative text-sm px-3.5 py-1.5 rounded-lg transition-all duration-200 ${
                       active
-                        ? "bg-neutral-800 text-white"
-                        : "text-neutral-400 hover:text-neutral-100"
+                        ? "text-white bg-neutral-800/60"
+                        : "text-neutral-500 hover:text-neutral-200 hover:bg-neutral-800/30"
                     }`}
                   >
                     {link.label}
+                    {active && (
+                      <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-4 h-0.5 bg-bordeaux-500 rounded-full" />
+                    )}
                   </Link>
                 );
               })}
@@ -47,12 +50,12 @@ export function TrainerNav() {
           {session && (
             <div className="flex items-center gap-3">
               {session.user?.image && (
-                <img src={session.user.image} alt="" className="w-7 h-7 rounded-full" />
+                <img src={session.user.image} alt="" className="w-7 h-7 rounded-full ring-1 ring-neutral-700" />
               )}
-              <span className="text-sm text-neutral-400">{session.user?.name}</span>
+              <span className="text-sm text-neutral-400 hidden sm:inline">{session.user?.name}</span>
               <button
                 onClick={() => signOut({ callbackUrl: "/login" })}
-                className="text-xs text-neutral-600 hover:text-neutral-400 transition-colors ml-2"
+                className="text-xs text-neutral-600 hover:text-neutral-300 transition-colors ml-1"
               >
                 Sign out
               </button>
