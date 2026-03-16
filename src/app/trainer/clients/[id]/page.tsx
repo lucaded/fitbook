@@ -48,6 +48,8 @@ export default function ClientDetailPage() {
   // New program form
   const [showNewProgram, setShowNewProgram] = useState(false);
   const [progForm, setProgForm] = useState({ name: "", weeks: "8", daysPerWeek: "4" });
+  const [templates, setTemplates] = useState<{ id: string; name: string; daysPerWeek: number; client: { name: string }; _count: { weeks: number } }[]>([]);
+  const [selectedTemplate, setSelectedTemplate] = useState("");
 
   const loadClient = () => {
     fetch(`/api/clients/${params.id}`)
@@ -70,6 +72,12 @@ export default function ClientDetailPage() {
 
   useEffect(() => { loadClient(); }, [params.id]);
 
+  useEffect(() => {
+    if (showNewProgram && templates.length === 0) {
+      fetch("/api/templates").then((r) => r.json()).then(setTemplates).catch(() => {});
+    }
+  }, [showNewProgram]);
+
   const saveClient = async () => {
     await fetch(`/api/clients/${params.id}`, {
       method: "PATCH",
@@ -82,18 +90,33 @@ export default function ClientDetailPage() {
 
   const createProgram = async () => {
     if (!progForm.name.trim()) return;
-    await fetch("/api/programs", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        clientId: params.id,
-        name: progForm.name,
-        weeks: parseInt(progForm.weeks),
-        daysPerWeek: parseInt(progForm.daysPerWeek),
-      }),
-    });
+    if (selectedTemplate) {
+      // Create from template
+      await fetch("/api/templates", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          clientId: params.id,
+          name: progForm.name,
+          weeks: parseInt(progForm.weeks),
+          sourceProgramId: selectedTemplate,
+        }),
+      });
+    } else {
+      await fetch("/api/programs", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          clientId: params.id,
+          name: progForm.name,
+          weeks: parseInt(progForm.weeks),
+          daysPerWeek: parseInt(progForm.daysPerWeek),
+        }),
+      });
+    }
     setShowNewProgram(false);
     setProgForm({ name: "", weeks: "8", daysPerWeek: "4" });
+    setSelectedTemplate("");
     loadClient();
   };
 
@@ -262,6 +285,28 @@ export default function ClientDetailPage() {
 
           {showNewProgram && (
             <div className="bg-neutral-950 border border-neutral-800 rounded-lg p-4 mb-4">
+              {/* Template selector */}
+              {templates.length > 0 && (
+                <div className="mb-3">
+                  <label className="text-xs text-neutral-500 block mb-1">Start from template (optional)</label>
+                  <select
+                    value={selectedTemplate}
+                    onChange={(e) => {
+                      setSelectedTemplate(e.target.value);
+                      const t = templates.find((tp) => tp.id === e.target.value);
+                      if (t) setProgForm((f) => ({ ...f, daysPerWeek: t.daysPerWeek.toString(), weeks: t._count.weeks.toString() }));
+                    }}
+                    className="w-full bg-neutral-900 border border-neutral-800 rounded px-3 py-2 text-sm text-neutral-100 focus:border-bordeaux-500 focus:outline-none"
+                  >
+                    <option value="">Blank program</option>
+                    {templates.map((t) => (
+                      <option key={t.id} value={t.id}>
+                        {t.name} ({t.client.name}) — {t.daysPerWeek}d/wk, {t._count.weeks}wk
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
               <div className="grid grid-cols-3 gap-3 mb-3">
                 <div>
                   <label className="text-xs text-neutral-500 block mb-1">Program Name</label>
@@ -293,6 +338,7 @@ export default function ClientDetailPage() {
                     value={progForm.daysPerWeek}
                     onChange={(e) => setProgForm({ ...progForm, daysPerWeek: e.target.value })}
                     className="w-full bg-neutral-900 border border-neutral-800 rounded px-3 py-2 text-sm text-neutral-100 focus:border-bordeaux-500 focus:outline-none"
+                    disabled={!!selectedTemplate}
                   />
                 </div>
               </div>
@@ -301,7 +347,7 @@ export default function ClientDetailPage() {
                 disabled={!progForm.name.trim()}
                 className="bg-bordeaux-700 hover:bg-bordeaux-600 disabled:opacity-50 text-white text-sm px-4 py-2 rounded-lg transition-colors"
               >
-                Create Program
+                {selectedTemplate ? "Create from Template" : "Create Program"}
               </button>
             </div>
           )}

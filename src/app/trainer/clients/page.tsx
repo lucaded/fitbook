@@ -18,6 +18,7 @@ export default function ClientsPage() {
   const [showAdd, setShowAdd] = useState(false);
   const [form, setForm] = useState({ name: "", email: "", phone: "", height: "", weight: "", goals: "", injuries: "" });
   const [saving, setSaving] = useState(false);
+  const [search, setSearch] = useState("");
 
   const loadClients = () => {
     fetch("/api/clients")
@@ -53,7 +54,18 @@ export default function ClientsPage() {
           {showAdd ? "Cancel" : "+ Add Client"}
         </button>
       </div>
-      <p className="text-sm text-neutral-500 mb-6">Add and manage your clients. Click a client to view their profile and programs.</p>
+      <p className="text-sm text-neutral-500 mb-4">Add and manage your clients. Click a client to view their profile and programs.</p>
+
+      {/* Search */}
+      {clients.length > 0 && (
+        <input
+          type="text"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Search clients by name, email, or phone..."
+          className="w-full bg-neutral-950 border border-neutral-800 rounded-lg px-4 py-2.5 text-sm text-neutral-100 focus:border-bordeaux-500 focus:outline-none mb-4 placeholder-neutral-600"
+        />
+      )}
 
       {/* Add Client Form */}
       {showAdd && (
@@ -117,7 +129,11 @@ export default function ClientsPage() {
         </div>
       ) : (
         <div className="space-y-2">
-          {clients.map((client) => (
+          {clients.filter((c) => {
+            if (!search.trim()) return true;
+            const q = search.toLowerCase();
+            return c.name.toLowerCase().includes(q) || (c.email && c.email.toLowerCase().includes(q)) || (c.phone && c.phone.includes(q));
+          }).map((client) => (
             <Link key={client.id} href={`/trainer/clients/${client.id}`}
               className="flex items-center justify-between bg-neutral-950 border border-neutral-800 rounded-lg px-5 py-4 hover:border-neutral-700 transition-colors group">
               <div className="flex items-center gap-3">
