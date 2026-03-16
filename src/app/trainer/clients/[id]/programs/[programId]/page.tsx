@@ -165,16 +165,6 @@ export default function ProgramEditorPage() {
     return { weekNumber: week.weekNumber, totalVolume: vol, totalReps: reps, avgIntensity: wIntD > 0 ? Math.round(wIntS / wIntD * 10) / 10 : 0 };
   };
 
-  // Track exercise load across weeks for sparkline
-  const getExerciseProgression = (exerciseId: string, dayNumber: number) => {
-    if (!program) return [];
-    return program.weeks.map((w) => {
-      const day = w.days.find((d) => d.dayNumber === dayNumber);
-      const ex = day?.exercises.find((e) => e.exerciseId === exerciseId);
-      return ex?.actualLoadKg ?? ex?.loadKg ?? null;
-    }).filter((v): v is number => v !== null);
-  };
-
   const addCustomExercise = (name: string) => {
     if (activeCell) addExercise(activeCell.week, activeCell.day, { id: `custom-${Date.now()}`, name, category: "custom", muscleGroups: [] });
   };
@@ -422,8 +412,6 @@ export default function ProgramEditorPage() {
                               const oneRM = program.oneRMs[ex.exerciseId] || 0;
                               const ri = getRI(ex.intensityPercent, ex.reps);
                               const suggestion = getSuggestion(wIdx, dIdx, ex.exerciseId);
-                              const progression = getExerciseProgression(ex.exerciseId, day.dayNumber);
-
                               return (
                                 <div key={ex.id} className={`rounded-lg p-2 transition-colors ${
                                   ex.actualSets !== null
@@ -439,21 +427,6 @@ export default function ProgramEditorPage() {
                                         className="text-neutral-700 hover:text-red-400 text-[11px] transition-colors leading-none">x</button>
                                     </div>
                                   </div>
-
-                                  {/* Mini progression sparkline */}
-                                  {progression.length > 1 && (
-                                    <div className="flex items-end gap-px h-3 mb-1.5">
-                                      {progression.map((val, pi) => {
-                                        const max = Math.max(...progression);
-                                        const min = Math.min(...progression);
-                                        const range = max - min || 1;
-                                        const h = Math.max(2, ((val - min) / range) * 12);
-                                        return <div key={pi}
-                                          className={`w-1 rounded-sm transition-all ${pi === wIdx ? "bg-bordeaux-600" : "bg-[#222]"}`}
-                                          style={{ height: `${h}px` }} />;
-                                      })}
-                                    </div>
-                                  )}
 
                                   {suggestion && !ex.loadKg && (
                                     <button onClick={(e) => { e.stopPropagation(); updateExercise(wIdx, dIdx, eIdx, suggestion); }}
