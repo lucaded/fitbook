@@ -67,6 +67,26 @@ enum Role {
   CLIENT   // Clients
 }
 
+// Trainer manages clients directly (no login needed for clients)
+model Client {
+  id        String   @id @default(cuid())
+  name      String
+  email     String?
+  phone     String?
+  height    Float?   // cm
+  weight    Float?   // kg
+  goals     String?  @db.Text
+  injuries  String?  @db.Text
+  notes     String?  @db.Text
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  programs  ClientProgram[]
+  bookings  Booking[]
+  prs       PersonalRecord[]
+}
+
 model ClientProfile {
   id        String   @id @default(cuid())
   userId    String   @unique
@@ -81,9 +101,85 @@ model ClientProfile {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
+// Program assigned to a client by the trainer
+model ClientProgram {
+  id                  String   @id @default(cuid())
+  clientId            String
+  name                String
+  daysPerWeek         Int
+  progressionIncrement Float  @default(2.5) // kg
+  oneRMs              Json     @default("{}") // exerciseId → kg
+  status              ProgramStatus @default(ACTIVE)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  client Client             @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  weeks  ProgramWeek[]
+}
+
+enum ProgramStatus {
+  ACTIVE
+  COMPLETED
+  ARCHIVED
+}
+
+model ProgramWeek {
+  id          String   @id @default(cuid())
+  programId   String
+  weekNumber  Int
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  program ClientProgram  @relation(fields: [programId], references: [id], onDelete: Cascade)
+  days    ProgramDay[]
+}
+
+model ProgramDay {
+  id        String   @id @default(cuid())
+  weekId    String
+  dayNumber Int
+  label     String?  // e.g., "Upper A", "Lower B"
+
+  week      ProgramWeek        @relation(fields: [weekId], references: [id], onDelete: Cascade)
+  exercises ProgramExercise[]
+}
+
+model ProgramExercise {
+  id               String  @id @default(cuid())
+  dayId            String
+  exerciseName     String
+  exerciseId       String  // library reference
+  order            Int     @default(0)
+  sets             Int
+  reps             Int
+  intensityPercent Float?  // %1RM
+  loadKg           Float?  // prescribed kg
+  rpe              Float?  // optional
+  notes            String? @db.Text
+  // Actuals logged by trainer
+  actualSets       Int?
+  actualReps       Int?
+  actualLoadKg     Float?
+
+  day ProgramDay @relation(fields: [dayId], references: [id], onDelete: Cascade)
+}
+
+model PersonalRecord {
+  id           String   @id @default(cuid())
+  clientId     String
+  exerciseId   String
+  exerciseName String
+  loadKg       Float
+  reps         Int
+  date         DateTime @default(now())
+
+  client Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+}
+
 model Booking {
   id        String        @id @default(cuid())
-  userId    String
+  userId    String?
+  clientId  String?
   date      DateTime
   startTime DateTime
   endTime   DateTime
@@ -93,7 +189,8 @@ model Booking {
   createdAt DateTime      @default(now())
   updatedAt DateTime      @updatedAt
 
-  user     User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user     User?             @relation(fields: [userId], references: [id], onDelete: SetNull)
+  client   Client?           @relation(fields: [clientId], references: [id], onDelete: SetNull)
   training TrainingSession?
 }
 
