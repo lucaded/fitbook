@@ -45,7 +45,6 @@ export default function ClientDetailPage() {
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState({ name: "", email: "", phone: "", height: "", weight: "", goals: "", injuries: "", notes: "" });
 
-  // New program form
   const [showNewProgram, setShowNewProgram] = useState(false);
   const [progForm, setProgForm] = useState({ name: "", weeks: "8", daysPerWeek: "4" });
   const [templates, setTemplates] = useState<{ id: string; name: string; daysPerWeek: number; client: { name: string }; _count: { weeks: number } }[]>([]);
@@ -57,14 +56,9 @@ export default function ClientDetailPage() {
       .then((data) => {
         setClient(data);
         setForm({
-          name: data.name || "",
-          email: data.email || "",
-          phone: data.phone || "",
-          height: data.height?.toString() || "",
-          weight: data.weight?.toString() || "",
-          goals: data.goals || "",
-          injuries: data.injuries || "",
-          notes: data.notes || "",
+          name: data.name || "", email: data.email || "", phone: data.phone || "",
+          height: data.height?.toString() || "", weight: data.weight?.toString() || "",
+          goals: data.goals || "", injuries: data.injuries || "", notes: data.notes || "",
         });
         setLoading(false);
       });
@@ -80,8 +74,7 @@ export default function ClientDetailPage() {
 
   const saveClient = async () => {
     await fetch(`/api/clients/${params.id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
+      method: "PATCH", headers: { "Content-Type": "application/json" },
       body: JSON.stringify(form),
     });
     setEditing(false);
@@ -92,25 +85,13 @@ export default function ClientDetailPage() {
     if (!progForm.name.trim()) return;
     if (selectedTemplate) {
       await fetch("/api/templates", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          clientId: params.id,
-          name: progForm.name,
-          weeks: parseInt(progForm.weeks),
-          sourceProgramId: selectedTemplate,
-        }),
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ clientId: params.id, name: progForm.name, weeks: parseInt(progForm.weeks), sourceProgramId: selectedTemplate }),
       });
     } else {
       await fetch("/api/programs", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          clientId: params.id,
-          name: progForm.name,
-          weeks: parseInt(progForm.weeks),
-          daysPerWeek: parseInt(progForm.daysPerWeek),
-        }),
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ clientId: params.id, name: progForm.name, weeks: parseInt(progForm.weeks), daysPerWeek: parseInt(progForm.daysPerWeek) }),
       });
     }
     setShowNewProgram(false);
@@ -127,40 +108,45 @@ export default function ClientDetailPage() {
 
   if (loading) return (
     <div className="flex items-center justify-center py-20">
-      <div className="w-5 h-5 border-2 border-neutral-700 border-t-transparent rounded-full animate-spin" />
+      <div className="w-4 h-4 border-2 border-neutral-700 border-t-neutral-400 rounded-full animate-spin" />
     </div>
   );
   if (!client) return <p className="text-red-500 py-8">Client not found</p>;
 
   const statusStyles: Record<string, string> = {
-    ACTIVE: "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20",
-    COMPLETED: "bg-blue-500/10 text-blue-400 border border-blue-500/20",
-    DRAFT: "bg-neutral-500/10 text-neutral-400 border border-neutral-500/20",
+    ACTIVE: "bg-emerald-500/10 text-emerald-400",
+    COMPLETED: "bg-blue-500/10 text-blue-400",
+    DRAFT: "bg-neutral-500/10 text-neutral-500",
   };
+
+  // Best PR per exercise
+  const bestPRs = new Map<string, typeof client.prs[0]>();
+  for (const pr of client.prs) {
+    const existing = bestPRs.get(pr.exerciseName);
+    if (!existing || pr.loadKg > existing.loadKg) bestPRs.set(pr.exerciseName, pr);
+  }
 
   return (
     <div>
-      {/* Breadcrumb + Header */}
-      <div className="mb-8">
-        <div className="flex items-center gap-2 text-sm text-neutral-600 mb-3">
-          <Link href="/trainer/clients" className="hover:text-neutral-300 transition-colors">Clients</Link>
-          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
-          <span className="text-neutral-400">{client.name}</span>
+      {/* Breadcrumb */}
+      <div className="flex items-center gap-1.5 text-[13px] text-neutral-600 mb-4">
+        <Link href="/trainer/clients" className="hover:text-neutral-400 transition-colors">Clients</Link>
+        <span className="text-neutral-700">/</span>
+        <span className="text-neutral-400">{client.name}</span>
+      </div>
+
+      <div className="flex items-center justify-between mb-8">
+        <div className="flex items-center gap-3">
+          <h1 className="text-lg font-semibold tracking-tight">{client.name}</h1>
+          <div className={`w-2 h-2 rounded-full ${client.active ? "bg-emerald-500" : "bg-neutral-700"}`} />
         </div>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-bold tracking-tight">{client.name}</h1>
-            <div className={`w-2.5 h-2.5 rounded-full ${client.active ? "bg-emerald-400" : "bg-neutral-600"}`} />
-          </div>
-          <div className="flex gap-2">
-            <button onClick={() => setEditing(!editing)} className="btn-ghost text-xs">
-              {editing ? "Cancel" : "Edit"}
-            </button>
-            <button onClick={deleteClient}
-              className="text-xs text-red-400/60 hover:text-red-400 px-3 py-1.5 rounded-lg hover:bg-red-950/30 transition-all">
-              Delete
-            </button>
-          </div>
+        <div className="flex gap-1.5">
+          <button onClick={() => setEditing(!editing)} className="btn-ghost text-[12px]">
+            {editing ? "Cancel" : "Edit"}
+          </button>
+          <button onClick={deleteClient} className="btn-ghost text-[12px] text-neutral-600 hover:text-red-400">
+            Delete
+          </button>
         </div>
       </div>
 
@@ -169,28 +155,19 @@ export default function ClientDetailPage() {
         <div className="col-span-1 space-y-4">
           <div className="card p-5">
             <h2 className="section-title mb-4">Info</h2>
-
             {editing ? (
               <div className="space-y-2.5">
-                <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })}
-                  className="input-field" placeholder="Name" />
-                <input value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })}
-                  className="input-field" placeholder="Email" />
-                <input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                  className="input-field" placeholder="Phone" />
+                <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="input-field" placeholder="Name" />
+                <input value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className="input-field" placeholder="Email" />
+                <input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className="input-field" placeholder="Phone" />
                 <div className="grid grid-cols-2 gap-2">
-                  <input value={form.height} onChange={(e) => setForm({ ...form, height: e.target.value })}
-                    className="input-field" placeholder="Height cm" />
-                  <input value={form.weight} onChange={(e) => setForm({ ...form, weight: e.target.value })}
-                    className="input-field" placeholder="Weight kg" />
+                  <input value={form.height} onChange={(e) => setForm({ ...form, height: e.target.value })} className="input-field" placeholder="Height cm" />
+                  <input value={form.weight} onChange={(e) => setForm({ ...form, weight: e.target.value })} className="input-field" placeholder="Weight kg" />
                 </div>
-                <textarea value={form.goals} onChange={(e) => setForm({ ...form, goals: e.target.value })}
-                  rows={2} className="input-field" placeholder="Goals" />
-                <textarea value={form.injuries} onChange={(e) => setForm({ ...form, injuries: e.target.value })}
-                  rows={2} className="input-field" placeholder="Injuries" />
-                <textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })}
-                  rows={2} className="input-field" placeholder="Notes" />
-                <button onClick={saveClient} className="btn-primary w-full">Save</button>
+                <textarea value={form.goals} onChange={(e) => setForm({ ...form, goals: e.target.value })} rows={2} className="input-field" placeholder="Goals" />
+                <textarea value={form.injuries} onChange={(e) => setForm({ ...form, injuries: e.target.value })} rows={2} className="input-field" placeholder="Injuries" />
+                <textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} rows={2} className="input-field" placeholder="Notes" />
+                <button onClick={saveClient} className="btn-primary w-full text-[13px]">Save</button>
               </div>
             ) : (
               <div className="space-y-3 text-sm">
@@ -204,69 +181,57 @@ export default function ClientDetailPage() {
                   { label: "Notes", value: client.notes },
                 ].filter((f) => f.value).map((field) => (
                   <div key={field.label}>
-                    <span className="text-neutral-500 text-xs">{field.label}</span>
-                    <p className="text-neutral-200 mt-0.5">{field.value}</p>
+                    <span className="text-[11px] text-neutral-600">{field.label}</span>
+                    <p className="text-neutral-300 text-[13px] mt-0.5">{field.value}</p>
                   </div>
                 ))}
                 {!client.email && !client.phone && !client.goals && (
-                  <p className="text-neutral-600 text-xs italic">No details added yet. Click Edit to add info.</p>
+                  <p className="text-neutral-600 text-[12px]">No details yet. Click Edit to add.</p>
                 )}
               </div>
             )}
           </div>
 
-          {/* PRs — best per exercise */}
-          {client.prs.length > 0 && (() => {
-            const bestPRs = new Map<string, typeof client.prs[0]>();
-            for (const pr of client.prs) {
-              const existing = bestPRs.get(pr.exerciseName);
-              if (!existing || pr.loadKg > existing.loadKg) bestPRs.set(pr.exerciseName, pr);
-            }
-            return (
-              <div className="card p-5">
-                <h2 className="section-title mb-3">Personal Records</h2>
-                <div className="space-y-2.5">
-                  {Array.from(bestPRs.values()).map((pr) => (
-                    <div key={pr.id} className="flex justify-between items-center">
-                      <span className="text-sm text-neutral-300">{pr.exerciseName}</span>
-                      <span className="text-bordeaux-400 text-sm tabular-nums tracking-tight">{pr.loadKg} kg <span className="text-neutral-600">x</span> {pr.reps}</span>
-                    </div>
-                  ))}
-                </div>
+          {/* PRs */}
+          {bestPRs.size > 0 && (
+            <div className="card p-5">
+              <h2 className="section-title mb-3">Personal Records</h2>
+              <div className="space-y-2.5">
+                {Array.from(bestPRs.values()).map((pr) => (
+                  <div key={pr.id} className="flex justify-between items-center">
+                    <span className="text-[13px] text-neutral-300">{pr.exerciseName}</span>
+                    <span className="text-[13px] text-neutral-100 tabular-nums">{pr.loadKg} <span className="text-neutral-600">kg x</span> {pr.reps}</span>
+                  </div>
+                ))}
               </div>
-            );
-          })()}
+            </div>
+          )}
         </div>
 
         {/* Programs */}
         <div className="col-span-2">
           <div className="flex items-center justify-between mb-4">
             <h2 className="section-title">Programs</h2>
-            <button onClick={() => setShowNewProgram(!showNewProgram)} className="btn-primary text-xs">
-              {showNewProgram ? "Cancel" : "+ New Program"}
+            <button onClick={() => setShowNewProgram(!showNewProgram)} className="btn-primary text-[12px] py-1.5">
+              {showNewProgram ? "Cancel" : "New Program"}
             </button>
           </div>
 
           {showNewProgram && (
             <div className="card p-5 mb-4">
-              {/* Template selector */}
               {templates.length > 0 && (
                 <div className="mb-4">
-                  <label className="label">Start from template (optional)</label>
-                  <select
-                    value={selectedTemplate}
+                  <label className="label">Start from template</label>
+                  <select value={selectedTemplate}
                     onChange={(e) => {
                       setSelectedTemplate(e.target.value);
                       const t = templates.find((tp) => tp.id === e.target.value);
                       if (t) setProgForm((f) => ({ ...f, daysPerWeek: t.daysPerWeek.toString(), weeks: t._count.weeks.toString() }));
                     }}
-                    className="input-field"
-                  >
+                    className="input-field">
                     <option value="">Blank program</option>
                     {templates.map((t) => (
-                      <option key={t.id} value={t.id}>
-                        {t.name} ({t.client.name}) — {t.daysPerWeek}d/wk, {t._count.weeks}wk
-                      </option>
+                      <option key={t.id} value={t.id}>{t.name} ({t.client.name}) — {t.daysPerWeek}d/wk, {t._count.weeks}wk</option>
                     ))}
                   </select>
                 </div>
@@ -274,15 +239,13 @@ export default function ClientDetailPage() {
               <div className="grid grid-cols-3 gap-3 mb-4">
                 <div>
                   <label className="label">Program Name</label>
-                  <input type="text" value={progForm.name}
-                    onChange={(e) => setProgForm({ ...progForm, name: e.target.value })}
+                  <input type="text" value={progForm.name} onChange={(e) => setProgForm({ ...progForm, name: e.target.value })}
                     className="input-field" placeholder="e.g., Hypertrophy Block 1" />
                 </div>
                 <div>
                   <label className="label">Weeks</label>
                   <input type="number" min={1} max={52} value={progForm.weeks}
-                    onChange={(e) => setProgForm({ ...progForm, weeks: e.target.value })}
-                    className="input-field" />
+                    onChange={(e) => setProgForm({ ...progForm, weeks: e.target.value })} className="input-field" />
                 </div>
                 <div>
                   <label className="label">Days / Week</label>
@@ -291,36 +254,34 @@ export default function ClientDetailPage() {
                     className="input-field" disabled={!!selectedTemplate} />
                 </div>
               </div>
-              <button onClick={createProgram} disabled={!progForm.name.trim()} className="btn-primary disabled:opacity-40">
+              <button onClick={createProgram} disabled={!progForm.name.trim()} className="btn-primary disabled:opacity-40 text-[13px]">
                 {selectedTemplate ? "Create from Template" : "Create Program"}
               </button>
             </div>
           )}
 
           {client.programs.length === 0 ? (
-            <div className="card px-6 py-12 text-center text-neutral-500 text-sm">
-              No programs yet. Create one to start building {client.name}&apos;s training.
+            <div className="card px-6 py-10 text-center text-neutral-500 text-sm">
+              No programs yet. Create one to get started.
             </div>
           ) : (
-            <div className="space-y-1.5">
+            <div className="card overflow-hidden divide-y divide-[#1e1e1e]">
               {client.programs.map((prog) => (
-                <Link
-                  key={prog.id}
+                <Link key={prog.id}
                   href={`/trainer/clients/${client.id}/programs/${prog.id}`}
-                  className="block card-hover px-5 py-4 group"
-                >
+                  className="block px-5 py-4 hover:bg-[#181818] transition-colors group">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm font-medium group-hover:text-white transition-colors">{prog.name}</p>
-                      <p className="text-xs text-neutral-500 mt-1">
-                        {prog.daysPerWeek} days/week · Created {new Date(prog.createdAt).toLocaleDateString()}
+                      <p className="text-sm text-neutral-200 group-hover:text-white transition-colors">{prog.name}</p>
+                      <p className="text-[12px] text-neutral-600 mt-0.5">
+                        {prog.daysPerWeek} days/week · {new Date(prog.createdAt).toLocaleDateString()}
                       </p>
                     </div>
                     <div className="flex items-center gap-3">
-                      <span className={`text-[10px] px-2.5 py-0.5 rounded-full font-medium ${statusStyles[prog.status] || statusStyles.DRAFT}`}>
+                      <span className={`text-[10px] px-2 py-0.5 rounded-md font-medium ${statusStyles[prog.status] || statusStyles.DRAFT}`}>
                         {prog.status}
                       </span>
-                      <svg className="w-4 h-4 text-neutral-700 group-hover:text-bordeaux-400 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <svg className="w-3.5 h-3.5 text-neutral-700 group-hover:text-neutral-500 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5l7 7-7 7" />
                       </svg>
                     </div>

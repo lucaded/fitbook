@@ -34,73 +34,70 @@ export default function TrainerDashboard() {
 
   if (status === "loading") return (
     <div className="flex items-center justify-center py-20">
-      <div className="w-5 h-5 border-2 border-bordeaux-500 border-t-transparent rounded-full animate-spin" />
+      <div className="w-4 h-4 border-2 border-neutral-700 border-t-neutral-400 rounded-full animate-spin" />
     </div>
   );
 
   return (
     <div>
       <div className="mb-8">
-        <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
-        <p className="text-sm text-neutral-500 mt-1">Overview of your clients and training programs.</p>
+        <h1 className="text-lg font-semibold tracking-tight">Dashboard</h1>
+        <p className="text-[13px] text-neutral-500 mt-0.5">Overview of your clients and programs.</p>
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-3 gap-4 mb-8">
+      <div className="grid grid-cols-3 gap-3 mb-8">
         {[
-          { value: activeClients.length, label: "Active Clients", color: "text-bordeaux-400" },
-          { value: totalPrograms, label: "Programs", color: "text-white" },
-          { value: clients.length - activeClients.length, label: "Inactive", color: "text-neutral-500" },
+          { value: activeClients.length, label: "Active Clients" },
+          { value: totalPrograms, label: "Programs" },
+          { value: clients.length - activeClients.length, label: "Inactive" },
         ].map((stat) => (
-          <div key={stat.label} className="card px-5 py-5">
-            <p className={`text-3xl font-bold ${stat.color} tabular-nums`}>{stat.value}</p>
-            <p className="text-sm text-neutral-500 mt-1">{stat.label}</p>
+          <div key={stat.label} className="card px-5 py-4">
+            <p className="text-2xl font-semibold text-neutral-100 tabular-nums">{stat.value}</p>
+            <p className="text-[12px] text-neutral-500 mt-0.5">{stat.label}</p>
           </div>
         ))}
       </div>
 
       {/* Quick Actions */}
-      <div className="flex gap-3 mb-8">
-        <Link href="/trainer/clients" className="btn-primary">
-          Manage Clients
-        </Link>
-        <Link href="/trainer/schedule" className="btn-secondary">
-          View Schedule
-        </Link>
+      <div className="flex gap-2 mb-8">
+        <Link href="/trainer/clients" className="btn-primary text-[13px]">Manage Clients</Link>
+        <Link href="/trainer/schedule" className="btn-secondary text-[13px]">View Schedule</Link>
       </div>
 
       {/* Client List */}
-      <div className="flex items-center justify-between mb-4">
+      <div className="mb-3">
         <h2 className="section-title">Clients</h2>
-        <span className="text-xs text-neutral-600">{clients.length} total</span>
       </div>
 
       {loading ? (
         <div className="flex items-center justify-center py-12">
-          <div className="w-5 h-5 border-2 border-neutral-700 border-t-transparent rounded-full animate-spin" />
+          <div className="w-4 h-4 border-2 border-neutral-700 border-t-neutral-400 rounded-full animate-spin" />
         </div>
       ) : clients.length === 0 ? (
-        <div className="card px-6 py-12 text-center">
-          <p className="text-neutral-500 text-sm mb-3">No clients yet</p>
-          <Link href="/trainer/clients" className="text-bordeaux-400 text-sm hover:text-bordeaux-300 transition-colors">
+        <div className="card px-6 py-10 text-center">
+          <p className="text-neutral-500 text-sm mb-2">No clients yet</p>
+          <Link href="/trainer/clients" className="text-bordeaux-500 text-sm hover:text-bordeaux-400 transition-colors">
             Add your first client
           </Link>
         </div>
       ) : (
-        <div className="space-y-1.5">
-          {clients.map((client) => (
+        <div className="space-y-px">
+          {clients.map((client, i) => (
             <Link
               key={client.id}
               href={`/trainer/clients/${client.id}`}
-              className="flex items-center justify-between card-hover px-5 py-3.5 group"
+              className={`flex items-center justify-between px-4 py-3 hover:bg-[#141414] transition-colors group ${
+                i === 0 ? "rounded-t-xl" : ""
+              } ${i === clients.length - 1 ? "rounded-b-xl" : ""}`}
             >
               <div className="flex items-center gap-3">
-                <div className={`w-2 h-2 rounded-full ${client.active ? "bg-emerald-400" : "bg-neutral-600"}`} />
-                <span className="text-sm font-medium group-hover:text-white transition-colors">{client.name}</span>
+                <div className={`w-1.5 h-1.5 rounded-full ${client.active ? "bg-emerald-500" : "bg-neutral-700"}`} />
+                <span className="text-sm text-neutral-300 group-hover:text-neutral-100 transition-colors">{client.name}</span>
               </div>
-              <div className="flex items-center gap-4 text-xs text-neutral-500">
-                <span>{client._count.programs} programs</span>
-                <svg className="w-4 h-4 text-neutral-700 group-hover:text-neutral-400 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <div className="flex items-center gap-4">
+                <span className="text-[12px] text-neutral-600 tabular-nums">{client._count.programs} programs</span>
+                <svg className="w-3.5 h-3.5 text-neutral-700 group-hover:text-neutral-500 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5l7 7-7 7" />
                 </svg>
               </div>

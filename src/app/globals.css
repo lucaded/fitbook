@@ -4,23 +4,23 @@
 
 @layer base {
   body {
-    @apply bg-neutral-950 text-neutral-100 antialiased;
+    @apply bg-[#0c0c0c] text-neutral-200 antialiased;
   }
 
   /* Custom scrollbar */
   ::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
+    width: 5px;
+    height: 5px;
   }
   ::-webkit-scrollbar-track {
     background: transparent;
   }
   ::-webkit-scrollbar-thumb {
-    background: #333;
+    background: #2a2a2a;
     border-radius: 999px;
   }
   ::-webkit-scrollbar-thumb:hover {
-    background: #555;
+    background: #444;
   }
 
   /* Hide number input spinners */
@@ -33,35 +33,34 @@
     -moz-appearance: textfield;
   }
 
-  /* Selection color */
   ::selection {
-    background: rgba(169, 29, 73, 0.3);
+    background: rgba(107, 51, 69, 0.35);
   }
 }
 
 @layer components {
   .card {
-    @apply bg-neutral-900/50 border border-neutral-800/60 rounded-xl backdrop-blur-sm;
+    @apply bg-[#141414] border border-[#1e1e1e] rounded-xl;
   }
   .card-hover {
-    @apply card hover:border-neutral-700/80 hover:bg-neutral-900/70 transition-all duration-200;
+    @apply card hover:border-[#2a2a2a] hover:bg-[#181818] transition-all duration-150;
   }
   .input-field {
-    @apply w-full bg-neutral-900/80 border border-neutral-800/60 rounded-lg px-3 py-2 text-sm text-neutral-100 placeholder-neutral-600 focus:border-bordeaux-600 focus:ring-1 focus:ring-bordeaux-600/30 focus:outline-none transition-all duration-200;
+    @apply w-full bg-[#111] border border-[#222] rounded-lg px-3 py-2 text-sm text-neutral-100 placeholder-neutral-600 focus:border-bordeaux-600 focus:outline-none transition-colors duration-150;
   }
   .btn-primary {
-    @apply bg-bordeaux-700 hover:bg-bordeaux-600 active:bg-bordeaux-800 text-white text-sm font-medium px-4 py-2 rounded-lg transition-all duration-200 shadow-sm shadow-bordeaux-900/20;
+    @apply bg-bordeaux-700 hover:bg-bordeaux-600 active:bg-bordeaux-800 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors duration-150;
   }
   .btn-secondary {
-    @apply border border-neutral-700/60 text-neutral-300 text-sm px-4 py-2 rounded-lg hover:bg-neutral-800/50 hover:border-neutral-600 transition-all duration-200;
+    @apply border border-[#2a2a2a] text-neutral-400 text-sm px-4 py-2 rounded-lg hover:bg-[#181818] hover:text-neutral-200 hover:border-[#333] transition-all duration-150;
   }
   .btn-ghost {
-    @apply text-neutral-400 text-sm px-3 py-1.5 rounded-lg hover:bg-neutral-800/50 hover:text-neutral-200 transition-all duration-200;
+    @apply text-neutral-500 text-sm px-3 py-1.5 rounded-lg hover:bg-[#181818] hover:text-neutral-300 transition-all duration-150;
   }
   .label {
-    @apply text-xs font-medium text-neutral-400 block mb-1.5;
+    @apply text-xs text-neutral-500 block mb-1.5;
   }
   .section-title {
-    @apply text-xs font-semibold text-neutral-500 uppercase tracking-widest;
+    @apply text-[11px] font-medium text-neutral-500 uppercase tracking-widest;
   }
 }
