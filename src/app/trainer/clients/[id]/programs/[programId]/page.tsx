@@ -67,7 +67,6 @@ export default function ProgramEditorPage() {
   const [showSearch, setShowSearch] = useState(false);
   const [customExName, setCustomExName] = useState("");
   const [showRPETable, setShowRPETable] = useState(false);
-  const [showOneRMs, setShowOneRMs] = useState(false);
   const [rpeTable, setRpeTable] = useState<Record<number, number[]>>({ ...DEFAULT_RPE_TABLE });
   const [view, setView] = useState<"table" | "summary">("table");
 
@@ -322,12 +321,6 @@ export default function ProgramEditorPage() {
               {view === "table" ? "Summary" : "Table"}
             </button>
             <button
-              onClick={() => setShowOneRMs(!showOneRMs)}
-              className="text-xs border border-neutral-700 rounded px-3 py-1.5 hover:bg-neutral-900 transition-colors"
-            >
-              1RM Values
-            </button>
-            <button
               onClick={() => setShowRPETable(!showRPETable)}
               className="text-xs border border-neutral-700 rounded px-3 py-1.5 hover:bg-neutral-900 transition-colors"
             >
@@ -337,29 +330,28 @@ export default function ProgramEditorPage() {
         </div>
       </div>
 
-      {/* 1RM Manager */}
-      {showOneRMs && (
+      {/* 1RM Manager — always visible */}
+      {Object.keys(program.oneRMs).length > 0 && (
         <div className="bg-neutral-950 border border-neutral-800 rounded-lg p-4 mb-4">
-          <h3 className="text-sm font-medium text-neutral-300 mb-3">1RM Values (kg)</h3>
-          <p className="text-[10px] text-neutral-600 mb-3">Set 1RM for each exercise. Load and intensity auto-calculate from these.</p>
-          <div className="grid grid-cols-3 gap-3">
+          <h3 className="text-xs font-semibold text-neutral-400 uppercase tracking-wider mb-3">Max Rep (1RM) — kg</h3>
+          <div className="flex flex-wrap gap-3">
             {Object.entries(program.oneRMs).map(([exId, rm]) => {
               const ex = allExercises.find((e) => e.id === exId);
               return (
-                <div key={exId} className="flex items-center gap-2">
-                  <span className="text-xs text-neutral-400 flex-1 truncate">{ex?.name || exId}</span>
+                <div key={exId} className="flex items-center gap-1.5 bg-neutral-900 rounded-lg px-3 py-2 border border-neutral-800">
+                  <span className="text-xs text-neutral-300 font-medium">{ex?.name || exId}</span>
                   <input
                     type="number"
                     min={0}
-                    step={0.5}
+                    step={2.5}
                     value={rm || ""}
                     onChange={(e) => {
                       const val = parseFloat(e.target.value) || 0;
                       saveOneRMs({ ...program.oneRMs, [exId]: val });
                     }}
-                    className="w-20 bg-neutral-900 border border-neutral-800 rounded px-2 py-1 text-xs text-neutral-100 focus:border-bordeaux-500 focus:outline-none text-right"
+                    className="w-16 bg-neutral-950 border border-neutral-700 rounded px-2 py-1 text-sm text-white font-mono focus:border-bordeaux-500 focus:outline-none text-center"
                   />
-                  <span className="text-[10px] text-neutral-600">kg</span>
+                  <span className="text-xs text-neutral-600">kg</span>
                 </div>
               );
             })}
