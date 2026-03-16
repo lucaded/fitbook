@@ -12,9 +12,12 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   callbacks: {
-    session({ session, user }) {
+    async session({ session, user }) {
       if (session.user) {
         session.user.id = user.id;
+        // Fetch role from DB
+        const dbUser = await prisma.user.findUnique({ where: { id: user.id }, select: { role: true } });
+        (session.user as any).role = dbUser?.role || "CLIENT";
       }
       return session;
     },

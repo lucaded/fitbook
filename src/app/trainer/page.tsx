@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 
 interface ClientSummary {
@@ -11,8 +13,14 @@ interface ClientSummary {
 }
 
 export default function TrainerDashboard() {
+  const { data: session, status } = useSession();
+  const router = useRouter();
   const [clients, setClients] = useState<ClientSummary[]>([]);
   const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (status === "unauthenticated") router.push("/login");
+  }, [status, router]);
 
   useEffect(() => {
     fetch("/api/clients")
@@ -23,11 +31,15 @@ export default function TrainerDashboard() {
 
   const activeClients = clients.filter((c) => c.active);
   const totalPrograms = clients.reduce((s, c) => s + c._count.programs, 0);
-  const totalBookings = clients.reduce((s, c) => s + c._count.bookings, 0);
+
+  if (status === "loading") return <div className="text-neutral-600 py-8">Loading...</div>;
 
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-6">Dashboard</h1>
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold">Dashboard</h1>
+        <p className="text-sm text-neutral-500 mt-1">Overview of your clients and training programs.</p>
+      </div>
 
       {/* Stats */}
       <div className="grid grid-cols-3 gap-4 mb-8">
@@ -40,8 +52,8 @@ export default function TrainerDashboard() {
           <p className="text-sm text-neutral-500 mt-1">Programs</p>
         </div>
         <div className="bg-neutral-950 border border-neutral-800 rounded-lg p-5">
-          <p className="text-3xl font-bold text-white">{totalBookings}</p>
-          <p className="text-sm text-neutral-500 mt-1">Bookings</p>
+          <p className="text-3xl font-bold text-white">{clients.length - activeClients.length}</p>
+          <p className="text-sm text-neutral-500 mt-1">Inactive Clients</p>
         </div>
       </div>
 
@@ -59,15 +71,9 @@ export default function TrainerDashboard() {
         >
           View Schedule
         </Link>
-        <Link
-          href="/program"
-          className="border border-neutral-700 text-neutral-300 text-sm px-4 py-2 rounded-lg hover:bg-neutral-900 transition-colors"
-        >
-          Program Builder
-        </Link>
       </div>
 
-      {/* Recent Clients */}
+      {/* Client List */}
       <h2 className="text-lg font-semibold mb-3">Clients</h2>
       {loading ? (
         <p className="text-neutral-600 text-sm">Loading...</p>
@@ -92,7 +98,6 @@ export default function TrainerDashboard() {
               </div>
               <div className="flex items-center gap-4 text-xs text-neutral-500">
                 <span>{client._count.programs} programs</span>
-                <span>{client._count.bookings} bookings</span>
               </div>
             </Link>
           ))}

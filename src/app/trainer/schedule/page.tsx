@@ -21,7 +21,10 @@ export default function SchedulePage() {
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">Schedule</h1>
+        <div>
+          <h1 className="text-2xl font-bold">Schedule</h1>
+          <p className="text-sm text-neutral-500 mt-1">Weekly calendar view. Plan and manage session bookings.</p>
+        </div>
         <button className="bg-bordeaux-700 hover:bg-bordeaux-600 text-white text-sm px-4 py-2 rounded-lg transition-colors">
           + New Booking
         </button>

@@ -44,7 +44,7 @@ export default function ClientsPage() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-2">
         <h1 className="text-2xl font-bold">Clients</h1>
         <button
           onClick={() => setShowAdd(!showAdd)}
@@ -53,89 +53,55 @@ export default function ClientsPage() {
           {showAdd ? "Cancel" : "+ Add Client"}
         </button>
       </div>
+      <p className="text-sm text-neutral-500 mb-6">Add and manage your clients. Click a client to view their profile and programs.</p>
 
       {/* Add Client Form */}
       {showAdd && (
         <div className="bg-neutral-950 border border-neutral-800 rounded-lg p-5 mb-6">
+          <h3 className="text-sm font-medium text-neutral-300 mb-3">New Client</h3>
           <div className="grid grid-cols-3 gap-3 mb-3">
             <div>
               <label className="text-xs text-neutral-500 block mb-1">Name *</label>
-              <input
-                type="text"
-                value={form.name}
-                onChange={(e) => setForm({ ...form, name: e.target.value })}
-                className="w-full bg-neutral-900 border border-neutral-800 rounded px-3 py-2 text-sm text-neutral-100 focus:border-bordeaux-500 focus:outline-none"
-                placeholder="Client name"
-              />
+              <input type="text" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })}
+                className="w-full bg-neutral-900 border border-neutral-800 rounded px-3 py-2 text-sm text-neutral-100 focus:border-bordeaux-500 focus:outline-none" placeholder="Client name" />
             </div>
             <div>
               <label className="text-xs text-neutral-500 block mb-1">Email</label>
-              <input
-                type="email"
-                value={form.email}
-                onChange={(e) => setForm({ ...form, email: e.target.value })}
-                className="w-full bg-neutral-900 border border-neutral-800 rounded px-3 py-2 text-sm text-neutral-100 focus:border-bordeaux-500 focus:outline-none"
-                placeholder="email@example.com"
-              />
+              <input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })}
+                className="w-full bg-neutral-900 border border-neutral-800 rounded px-3 py-2 text-sm text-neutral-100 focus:border-bordeaux-500 focus:outline-none" placeholder="email@example.com" />
             </div>
             <div>
               <label className="text-xs text-neutral-500 block mb-1">Phone</label>
-              <input
-                type="tel"
-                value={form.phone}
-                onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                className="w-full bg-neutral-900 border border-neutral-800 rounded px-3 py-2 text-sm text-neutral-100 focus:border-bordeaux-500 focus:outline-none"
-                placeholder="+39..."
-              />
+              <input type="tel" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                className="w-full bg-neutral-900 border border-neutral-800 rounded px-3 py-2 text-sm text-neutral-100 focus:border-bordeaux-500 focus:outline-none" placeholder="+39..." />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3 mb-3">
             <div>
               <label className="text-xs text-neutral-500 block mb-1">Height (cm)</label>
-              <input
-                type="number"
-                value={form.height}
-                onChange={(e) => setForm({ ...form, height: e.target.value })}
-                className="w-full bg-neutral-900 border border-neutral-800 rounded px-3 py-2 text-sm text-neutral-100 focus:border-bordeaux-500 focus:outline-none"
-              />
+              <input type="number" value={form.height} onChange={(e) => setForm({ ...form, height: e.target.value })}
+                className="w-full bg-neutral-900 border border-neutral-800 rounded px-3 py-2 text-sm text-neutral-100 focus:border-bordeaux-500 focus:outline-none" />
             </div>
             <div>
               <label className="text-xs text-neutral-500 block mb-1">Weight (kg)</label>
-              <input
-                type="number"
-                value={form.weight}
-                onChange={(e) => setForm({ ...form, weight: e.target.value })}
-                className="w-full bg-neutral-900 border border-neutral-800 rounded px-3 py-2 text-sm text-neutral-100 focus:border-bordeaux-500 focus:outline-none"
-              />
+              <input type="number" value={form.weight} onChange={(e) => setForm({ ...form, weight: e.target.value })}
+                className="w-full bg-neutral-900 border border-neutral-800 rounded px-3 py-2 text-sm text-neutral-100 focus:border-bordeaux-500 focus:outline-none" />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3 mb-4">
             <div>
               <label className="text-xs text-neutral-500 block mb-1">Goals</label>
-              <textarea
-                value={form.goals}
-                onChange={(e) => setForm({ ...form, goals: e.target.value })}
-                rows={2}
-                className="w-full bg-neutral-900 border border-neutral-800 rounded px-3 py-2 text-sm text-neutral-100 focus:border-bordeaux-500 focus:outline-none"
-                placeholder="Training goals..."
-              />
+              <textarea value={form.goals} onChange={(e) => setForm({ ...form, goals: e.target.value })} rows={2}
+                className="w-full bg-neutral-900 border border-neutral-800 rounded px-3 py-2 text-sm text-neutral-100 focus:border-bordeaux-500 focus:outline-none" placeholder="Training goals..." />
             </div>
             <div>
               <label className="text-xs text-neutral-500 block mb-1">Injuries / Notes</label>
-              <textarea
-                value={form.injuries}
-                onChange={(e) => setForm({ ...form, injuries: e.target.value })}
-                rows={2}
-                className="w-full bg-neutral-900 border border-neutral-800 rounded px-3 py-2 text-sm text-neutral-100 focus:border-bordeaux-500 focus:outline-none"
-                placeholder="Any injuries or relevant info..."
-              />
+              <textarea value={form.injuries} onChange={(e) => setForm({ ...form, injuries: e.target.value })} rows={2}
+                className="w-full bg-neutral-900 border border-neutral-800 rounded px-3 py-2 text-sm text-neutral-100 focus:border-bordeaux-500 focus:outline-none" placeholder="Any injuries or relevant info..." />
             </div>
           </div>
-          <button
-            onClick={addClient}
-            disabled={saving || !form.name.trim()}
-            className="bg-bordeaux-700 hover:bg-bordeaux-600 disabled:opacity-50 text-white text-sm px-5 py-2 rounded-lg transition-colors"
-          >
+          <button onClick={addClient} disabled={saving || !form.name.trim()}
+            className="bg-bordeaux-700 hover:bg-bordeaux-600 disabled:opacity-50 text-white text-sm px-5 py-2 rounded-lg transition-colors">
             {saving ? "Saving..." : "Add Client"}
           </button>
         </div>
@@ -152,11 +118,8 @@ export default function ClientsPage() {
       ) : (
         <div className="space-y-2">
           {clients.map((client) => (
-            <Link
-              key={client.id}
-              href={`/trainer/clients/${client.id}`}
-              className="flex items-center justify-between bg-neutral-950 border border-neutral-800 rounded-lg px-5 py-4 hover:border-neutral-700 transition-colors group"
-            >
+            <Link key={client.id} href={`/trainer/clients/${client.id}`}
+              className="flex items-center justify-between bg-neutral-950 border border-neutral-800 rounded-lg px-5 py-4 hover:border-neutral-700 transition-colors group">
               <div className="flex items-center gap-3">
                 <div className={`w-2.5 h-2.5 rounded-full ${client.active ? "bg-green-500" : "bg-neutral-600"}`} />
                 <div>
@@ -166,7 +129,6 @@ export default function ClientsPage() {
               </div>
               <div className="flex items-center gap-5 text-xs text-neutral-500">
                 <span>{client._count.programs} programs</span>
-                <span>{client._count.bookings} bookings</span>
                 <span className="text-neutral-700 group-hover:text-neutral-500">→</span>
               </div>
             </Link>

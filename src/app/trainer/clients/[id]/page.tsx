@@ -115,7 +115,10 @@ export default function ClientDetailPage() {
             ← Clients
           </Link>
           <span className="text-neutral-700">/</span>
-          <h1 className="text-2xl font-bold">{client.name}</h1>
+          <div>
+            <h1 className="text-2xl font-bold">{client.name}</h1>
+            <p className="text-xs text-neutral-500 mt-0.5">Client profile, programs, and personal records.</p>
+          </div>
           <div className={`w-2.5 h-2.5 rounded-full mt-1 ${client.active ? "bg-green-500" : "bg-neutral-600"}`} />
         </div>
         <div className="flex gap-2">
@@ -310,18 +313,19 @@ export default function ClientDetailPage() {
           ) : (
             <div className="space-y-2">
               {client.programs.map((prog) => (
-                <div
+                <Link
                   key={prog.id}
-                  className="bg-neutral-950 border border-neutral-800 rounded-lg px-5 py-4 hover:border-neutral-700 transition-colors"
+                  href={`/trainer/clients/${client.id}/programs/${prog.id}`}
+                  className="block bg-neutral-950 border border-neutral-800 rounded-lg px-5 py-4 hover:border-bordeaux-800 transition-colors group"
                 >
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm font-medium">{prog.name}</p>
+                      <p className="text-sm font-medium group-hover:text-white">{prog.name}</p>
                       <p className="text-xs text-neutral-500 mt-0.5">
                         {prog.daysPerWeek} days/week · Created {new Date(prog.createdAt).toLocaleDateString()}
                       </p>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-3">
                       <span className={`text-[10px] px-2 py-0.5 rounded uppercase tracking-wider ${
                         prog.status === "ACTIVE" ? "bg-green-900/30 text-green-400" :
                         prog.status === "COMPLETED" ? "bg-blue-900/30 text-blue-400" :
@@ -329,9 +333,10 @@ export default function ClientDetailPage() {
                       }`}>
                         {prog.status}
                       </span>
+                      <span className="text-xs text-neutral-700 group-hover:text-bordeaux-400">Open →</span>
                     </div>
                   </div>
-                </div>
+                </Link>
               ))}
             </div>
           )}
