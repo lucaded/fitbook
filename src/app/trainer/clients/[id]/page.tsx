@@ -215,20 +215,27 @@ export default function ClientDetailPage() {
             )}
           </div>
 
-          {/* PRs */}
-          {client.prs.length > 0 && (
-            <div className="card p-5">
-              <h2 className="section-title mb-3">Personal Records</h2>
-              <div className="space-y-2">
-                {client.prs.map((pr) => (
-                  <div key={pr.id} className="flex justify-between items-center text-sm">
-                    <span className="text-neutral-300">{pr.exerciseName}</span>
-                    <span className="text-bordeaux-400 font-mono text-xs">{pr.loadKg} kg x {pr.reps}</span>
-                  </div>
-                ))}
+          {/* PRs — best per exercise */}
+          {client.prs.length > 0 && (() => {
+            const bestPRs = new Map<string, typeof client.prs[0]>();
+            for (const pr of client.prs) {
+              const existing = bestPRs.get(pr.exerciseName);
+              if (!existing || pr.loadKg > existing.loadKg) bestPRs.set(pr.exerciseName, pr);
+            }
+            return (
+              <div className="card p-5">
+                <h2 className="section-title mb-3">Personal Records</h2>
+                <div className="space-y-2.5">
+                  {Array.from(bestPRs.values()).map((pr) => (
+                    <div key={pr.id} className="flex justify-between items-center">
+                      <span className="text-sm text-neutral-300">{pr.exerciseName}</span>
+                      <span className="text-bordeaux-400 text-sm tabular-nums tracking-tight">{pr.loadKg} kg <span className="text-neutral-600">x</span> {pr.reps}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
-          )}
+            );
+          })()}
         </div>
 
         {/* Programs */}
