@@ -274,6 +274,20 @@ export default function ProgramEditorPage() {
     setCustomExName("");
   };
 
+  // Add/remove days
+  const addDay = async () => {
+    if (!program) return;
+    await fetch(`/api/programs/${program.id}/days`, { method: "POST" });
+    loadProgram();
+  };
+
+  const removeDay = async () => {
+    if (!program || program.daysPerWeek <= 1) return;
+    if (!confirm(`Remove Day ${program.daysPerWeek} from all weeks? This deletes all exercises in that day.`)) return;
+    await fetch(`/api/programs/${program.id}/days`, { method: "DELETE" });
+    loadProgram();
+  };
+
   // Exercise search
   const allExercises = EXERCISE_LIBRARY;
   const filtered = searchQuery.length > 0
@@ -314,6 +328,21 @@ export default function ProgramEditorPage() {
             </p>
           </div>
           <div className="flex items-center gap-2">
+            <button
+              onClick={addDay}
+              className="text-xs bg-bordeaux-700 hover:bg-bordeaux-600 text-white rounded px-3 py-1.5 transition-colors"
+            >
+              + Day
+            </button>
+            {program.daysPerWeek > 1 && (
+              <button
+                onClick={removeDay}
+                className="text-xs border border-neutral-700 text-neutral-400 rounded px-3 py-1.5 hover:bg-neutral-900 transition-colors"
+              >
+                − Day
+              </button>
+            )}
+            <div className="w-px h-5 bg-neutral-800 mx-1" />
             <button
               onClick={() => setView(view === "table" ? "summary" : "table")}
               className="text-xs border border-neutral-700 rounded px-3 py-1.5 hover:bg-neutral-900 transition-colors"
