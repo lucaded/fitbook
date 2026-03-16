@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useI18n } from "@/lib/i18n";
 
 interface Client { id: string; name: string; }
 interface Booking {
@@ -10,6 +11,7 @@ interface Booking {
 }
 
 export default function SchedulePage() {
+  const { t } = useI18n();
   const [clients, setClients] = useState<Client[]>([]);
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [showAdd, setShowAdd] = useState(false);
@@ -73,103 +75,109 @@ export default function SchedulePage() {
     COMPLETED: "bg-emerald-900/15 border-emerald-800/20 text-emerald-400/80",
   };
 
+  const typeLabels: Record<string, string> = {
+    PERSONAL: t("personal"),
+    GROUP: t("group"),
+    ONLINE: t("online"),
+  };
+
   return (
     <div>
-      <div className="flex items-center justify-between mb-1">
-        <h1 className="text-lg font-semibold tracking-tight">Schedule</h1>
-        <button onClick={() => setShowAdd(!showAdd)} className="btn-primary text-[13px]">
-          {showAdd ? "Cancel" : "New Booking"}
+      <div className="flex items-center justify-between mb-2">
+        <h1 className="text-xl font-bold tracking-tight">{t("schedule")}</h1>
+        <button onClick={() => setShowAdd(!showAdd)} className="btn-primary text-[14px]">
+          {showAdd ? t("cancel") : t("newBooking")}
         </button>
       </div>
-      <p className="text-[13px] text-neutral-500 mb-6">Weekly calendar for training sessions.</p>
+      <p className="text-[14px] text-neutral-500 mb-8">{t("scheduleSub")}</p>
 
       {showAdd && (
-        <div className="card p-5 mb-5">
-          <h3 className="text-sm font-medium text-neutral-200 mb-4">New Booking</h3>
-          <div className="grid grid-cols-5 gap-3 mb-3">
+        <div className="card p-6 mb-6">
+          <h3 className="text-[15px] font-semibold text-neutral-200 mb-5">{t("newBooking")}</h3>
+          <div className="grid grid-cols-5 gap-4 mb-4">
             <div>
-              <label className="label">Client *</label>
+              <label className="label">{t("client")} *</label>
               <select value={form.clientId} onChange={(e) => setForm({ ...form, clientId: e.target.value })} className="input-field">
-                <option value="">Select...</option>
+                <option value="">{t("select")}</option>
                 {clients.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
             </div>
             <div>
-              <label className="label">Date *</label>
+              <label className="label">{t("date")} *</label>
               <input type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} className="input-field" />
             </div>
             <div>
-              <label className="label">Start</label>
+              <label className="label">{t("start")}</label>
               <input type="time" value={form.startTime} onChange={(e) => setForm({ ...form, startTime: e.target.value })} className="input-field" />
             </div>
             <div>
-              <label className="label">End</label>
+              <label className="label">{t("end")}</label>
               <input type="time" value={form.endTime} onChange={(e) => setForm({ ...form, endTime: e.target.value })} className="input-field" />
             </div>
             <div>
-              <label className="label">Type</label>
+              <label className="label">{t("type")}</label>
               <select value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })} className="input-field">
-                <option value="PERSONAL">Personal</option>
-                <option value="GROUP">Group</option>
-                <option value="ONLINE">Online</option>
+                <option value="PERSONAL">{t("personal")}</option>
+                <option value="GROUP">{t("group")}</option>
+                <option value="ONLINE">{t("online")}</option>
               </select>
             </div>
           </div>
-          <div className="mb-4">
-            <label className="label">Notes</label>
+          <div className="mb-5">
+            <label className="label">{t("notes")}</label>
             <input type="text" value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })}
-              placeholder="Optional..." className="input-field" />
+              placeholder={t("optional")} className="input-field" />
           </div>
-          <button onClick={createBooking} disabled={!form.clientId || !form.date} className="btn-primary disabled:opacity-40 text-[13px]">
-            Create Booking
+          <button onClick={createBooking} disabled={!form.clientId || !form.date} className="btn-primary disabled:opacity-40 text-[14px]">
+            {t("createBooking")}
           </button>
         </div>
       )}
 
       {/* Week nav */}
-      <div className="flex items-center gap-1.5 mb-5">
-        <button onClick={() => setWeekOffset(weekOffset - 1)} className="btn-ghost text-[12px]">Prev</button>
+      <div className="flex items-center gap-2 mb-6">
+        <button onClick={() => setWeekOffset(weekOffset - 1)} className="btn-ghost text-[13px]">{t("prev")}</button>
         <button onClick={() => setWeekOffset(0)}
-          className={`text-[12px] px-3 py-1.5 rounded-md transition-colors ${weekOffset === 0 ? "bg-bordeaux-800/20 text-bordeaux-400" : "btn-ghost"}`}>
-          This Week
+          className={`text-[13px] px-4 py-2 rounded-full transition-all duration-200 ${weekOffset === 0 ? "bg-bordeaux-800/20 text-bordeaux-400" : "btn-ghost"}`}>
+          {t("thisWeek")}
         </button>
-        <button onClick={() => setWeekOffset(weekOffset + 1)} className="btn-ghost text-[12px]">Next</button>
-        <span className="text-[12px] text-neutral-600 ml-2">
+        <button onClick={() => setWeekOffset(weekOffset + 1)} className="btn-ghost text-[13px]">{t("next")}</button>
+        <span className="text-[13px] text-neutral-600 ml-3">
           {weekDays[0].toLocaleDateString("en-GB", { day: "numeric", month: "short" })} — {weekDays[6].toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
         </span>
       </div>
 
       {/* Grid */}
       <div className="card overflow-hidden">
-        <div className="grid grid-cols-8 border-b border-[#1e1e1e]">
-          <div className="p-2.5 text-[11px] text-neutral-600"></div>
+        <div className="grid grid-cols-8 border-b border-[#181818]">
+          <div className="p-3 text-[12px] text-neutral-600"></div>
           {weekDays.map((day, i) => {
             const isToday = day.toDateString() === new Date().toDateString();
             return (
-              <div key={i} className={`p-2.5 text-center border-l border-[#1e1e1e] ${isToday ? "bg-bordeaux-950/15" : ""}`}>
-                <p className={`text-[10px] uppercase tracking-wider ${isToday ? "text-bordeaux-400" : "text-neutral-600"}`}>{dayNames[i]}</p>
-                <p className={`text-sm tabular-nums mt-0.5 ${isToday ? "text-bordeaux-400 font-semibold" : "text-neutral-400"}`}>{day.getDate()}</p>
+              <div key={i} className={`p-3 text-center border-l border-[#181818] ${isToday ? "bg-bordeaux-950/15" : ""}`}>
+                <p className={`text-[11px] uppercase tracking-wider ${isToday ? "text-bordeaux-400" : "text-neutral-600"}`}>{dayNames[i]}</p>
+                <p className={`text-[14px] tabular-nums mt-0.5 ${isToday ? "text-bordeaux-400 font-bold" : "text-neutral-400"}`}>{day.getDate()}</p>
               </div>
             );
           })}
         </div>
 
         {hours.map((hour) => (
-          <div key={hour} className="grid grid-cols-8 border-b border-[#151515] last:border-b-0">
-            <div className="px-2.5 py-1.5 text-[11px] text-neutral-700 tabular-nums">{hour.toString().padStart(2, "0")}:00</div>
+          <div key={hour} className="grid grid-cols-8 border-b border-[#111] last:border-b-0">
+            <div className="px-3 py-2 text-[12px] text-neutral-700 tabular-nums">{hour.toString().padStart(2, "0")}:00</div>
             {weekDays.map((day, di) => {
               const dayBookings = getBookingsForDayHour(day, hour);
               return (
-                <div key={di} className="px-1 py-0.5 border-l border-[#151515] min-h-[44px]">
+                <div key={di} className="px-1.5 py-1 border-l border-[#111] min-h-[48px]">
                   {dayBookings.map((b) => (
-                    <div key={b.id} className={`text-[10px] rounded-md px-1.5 py-1 border mb-0.5 ${statusColor[b.status] || statusColor.CONFIRMED}`}>
+                    <div key={b.id} className={`text-[11px] rounded-xl px-2 py-1.5 border mb-1 ${statusColor[b.status] || statusColor.CONFIRMED}`}>
                       <div className="font-medium">{b.client?.name || "Unknown"}</div>
-                      <div className="flex items-center gap-1.5 mt-0.5">
-                        <span className="uppercase text-[8px] opacity-60">{b.type}</span>
+                      <div className="flex items-center gap-2 mt-0.5">
+                        <span className="uppercase text-[9px] opacity-60">{typeLabels[b.type] || b.type}</span>
                         {b.status !== "CANCELLED" && (
-                          <button onClick={() => cancelBooking(b.id)} className="text-[8px] opacity-30 hover:opacity-80 underline transition-opacity">cancel</button>
+                          <button onClick={() => cancelBooking(b.id)} className="text-[9px] opacity-30 hover:opacity-80 underline transition-opacity">{t("cancel").toLowerCase()}</button>
                         )}
-                        <button onClick={() => deleteBooking(b.id)} className="text-[8px] opacity-30 hover:opacity-80 text-red-400 underline transition-opacity">del</button>
+                        <button onClick={() => deleteBooking(b.id)} className="text-[9px] opacity-30 hover:opacity-80 text-red-400 underline transition-opacity">{t("delete").toLowerCase()}</button>
                       </div>
                     </div>
                   ))}

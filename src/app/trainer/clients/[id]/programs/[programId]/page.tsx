@@ -10,6 +10,7 @@ import {
   EXERCISE_LIBRARY, DEFAULT_RPE_TABLE, RPE_VALUES, REP_RANGE,
   calcLoad, calcIntensity, calcRelativeIntensity, type LibraryExercise,
 } from "@/lib/training-data";
+import { useI18n } from "@/lib/i18n";
 
 interface ProgramExercise {
   id: string; dayId: string; exerciseName: string; exerciseId: string; order: number;
@@ -29,6 +30,7 @@ type SaveStatus = "idle" | "saving" | "saved";
 
 export default function ProgramEditorPage() {
   const params = useParams();
+  const { t } = useI18n();
   const [program, setProgram] = useState<Program | null>(null);
   const [loading, setLoading] = useState(true);
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
@@ -169,6 +171,15 @@ export default function ProgramEditorPage() {
     if (activeCell) addExercise(activeCell.week, activeCell.day, { id: `custom-${Date.now()}`, name, category: "custom", muscleGroups: [] });
   };
 
+  // Format exercise summary — clean, no @ symbol
+  const formatExSummary = (ex: ProgramExercise) => {
+    const parts: string[] = [`${ex.sets} × ${ex.reps}`];
+    if (ex.loadKg) parts.push(`${Math.round(ex.loadKg * 10) / 10} kg`);
+    else if (ex.intensityPercent) parts.push(`${Math.round(ex.intensityPercent)}%`);
+    if (ex.rpe) parts.push(`RPE ${Math.round(ex.rpe * 2) / 2}`);
+    return parts.join("  ·  ");
+  };
+
   const allExercises = EXERCISE_LIBRARY;
   const filtered = searchQuery.length > 0
     ? allExercises.filter((e) => e.name.toLowerCase().includes(searchQuery.toLowerCase()) || e.muscleGroups.some((g) => g.toLowerCase().includes(searchQuery.toLowerCase())))
@@ -189,10 +200,10 @@ export default function ProgramEditorPage() {
 
   if (loading) return (
     <div className="flex items-center justify-center py-20">
-      <div className="w-4 h-4 border-2 border-neutral-700 border-t-neutral-400 rounded-full animate-spin" />
+      <div className="w-5 h-5 border-2 border-neutral-800 border-t-neutral-400 rounded-full animate-spin" />
     </div>
   );
-  if (!program) return <div className="text-red-500 py-8">Program not found</div>;
+  if (!program) return <div className="text-red-500 py-8">{t("programNotFound")}</div>;
 
   const peakVol = summaries.reduce((a, b) => b.totalVolume > a.totalVolume ? b : a, summaries[0]);
   const peakInt = summaries.reduce((a, b) => b.avgIntensity > a.avgIntensity ? b : a, summaries[0]);
@@ -200,63 +211,66 @@ export default function ProgramEditorPage() {
   return (
     <div className="print:bg-white print:text-black">
       {/* Breadcrumb */}
-      <div className="flex items-center gap-1.5 text-[13px] text-neutral-600 mb-4 print:hidden">
-        <Link href="/trainer/clients" className="hover:text-neutral-400 transition-colors">Clients</Link>
+      <div className="flex items-center gap-2 text-[14px] text-neutral-600 mb-5 print:hidden">
+        <Link href="/trainer/clients" className="hover:text-neutral-300 transition-colors">{t("clients")}</Link>
         <span className="text-neutral-700">/</span>
-        <Link href={`/trainer/clients/${program.client.id}`} className="hover:text-neutral-400 transition-colors">{program.client.name}</Link>
+        <Link href={`/trainer/clients/${program.client.id}`} className="hover:text-neutral-300 transition-colors">{program.client.name}</Link>
         <span className="text-neutral-700">/</span>
-        <span className="text-neutral-400">{program.name}</span>
+        <span className="text-neutral-300">{program.name}</span>
       </div>
 
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-8">
         <div>
-          <div className="flex items-center gap-3">
-            <h1 className="text-lg font-semibold tracking-tight print:text-base">{program.name}</h1>
-            <span className="text-[13px] text-neutral-500">{program.client.name}</span>
-            {/* Save status */}
+          <div className="flex items-center gap-4">
+            <h1 className="text-xl font-bold tracking-tight print:text-base">{program.name}</h1>
+            <span className="text-[14px] text-neutral-500">{program.client.name}</span>
             {saveStatus === "saving" && (
-              <span className="flex items-center gap-1.5 text-[11px] text-amber-500/70">
-                <div className="w-1 h-1 rounded-full bg-amber-500 animate-pulse" />Saving
+              <span className="flex items-center gap-1.5 text-[12px] text-amber-500/70">
+                <div className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />{t("saving")}
               </span>
             )}
             {saveStatus === "saved" && (
-              <span className="text-[11px] text-emerald-500/70">Saved</span>
+              <span className="flex items-center gap-1.5 text-[12px] text-emerald-500/70">
+                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />{t("saved")}
+              </span>
             )}
           </div>
-          <p className="text-[12px] text-neutral-600 mt-0.5 tabular-nums">
-            {program.weeks.length} weeks · {program.daysPerWeek} days/week · +{program.progressionIncrement} kg/week
+          <p className="text-[13px] text-neutral-600 mt-1 tabular-nums">
+            {program.weeks.length} {t("weeks").toLowerCase()}  ·  {program.daysPerWeek} {t("daysPerWeek").toLowerCase()}  ·  +{program.progressionIncrement} kg
           </p>
         </div>
-        <div className="flex items-center gap-1 print:hidden">
-          <button onClick={addDay} className="btn-primary text-[11px] py-1 px-2.5">+ Day</button>
-          {program.daysPerWeek > 1 && <button onClick={removeDay} className="btn-ghost text-[11px]">- Day</button>}
-          <div className="w-px h-4 bg-[#222] mx-1" />
-          {(["table", "summary", "charts"] as const).map((v) => (
-            <button key={v} onClick={() => setView(v)}
-              className={`text-[11px] rounded-md px-2.5 py-1 transition-colors ${view === v ? "bg-[#1a1a1a] text-neutral-200" : "text-neutral-600 hover:text-neutral-400"}`}>
-              {v.charAt(0).toUpperCase() + v.slice(1)}
-            </button>
-          ))}
+        <div className="flex items-center gap-1.5 print:hidden">
+          <button onClick={addDay} className="text-[13px] font-medium text-bordeaux-400 hover:text-bordeaux-300 bg-bordeaux-500/[0.08] hover:bg-bordeaux-500/[0.14] px-3.5 py-1.5 rounded-full transition-all duration-200">{t("addDay")}</button>
+          {program.daysPerWeek > 1 && <button onClick={removeDay} className="text-[13px] text-neutral-600 hover:text-neutral-400 px-3 py-1.5 rounded-full transition-colors">{t("removeDay")}</button>}
+          <div className="w-px h-5 bg-[#1e1e1e] mx-1" />
+          <div className="flex bg-[#111] rounded-full p-0.5 border border-[#1c1c1c]">
+            {(["table", "summary", "charts"] as const).map((v) => (
+              <button key={v} onClick={() => setView(v)}
+                className={`text-[12px] rounded-full px-3.5 py-1 transition-all duration-200 ${view === v ? "bg-[#1e1e1e] text-neutral-200 shadow-sm" : "text-neutral-600 hover:text-neutral-400"}`}>
+                {t(v)}
+              </button>
+            ))}
+          </div>
           <button onClick={() => setShowRPETable(!showRPETable)}
-            className={`text-[11px] rounded-md px-2.5 py-1 transition-colors ${showRPETable ? "bg-[#1a1a1a] text-neutral-200" : "text-neutral-600 hover:text-neutral-400"}`}>RPE</button>
-          <button onClick={() => window.print()} className="btn-ghost text-[11px]">Print</button>
+            className={`text-[12px] rounded-full px-3.5 py-1 transition-all duration-200 ml-1 ${showRPETable ? "bg-[#1e1e1e] text-neutral-200" : "text-neutral-600 hover:text-neutral-400"}`}>RPE</button>
+          <button onClick={() => window.print()} className="text-[12px] text-neutral-600 hover:text-neutral-400 px-3 py-1 rounded-full transition-colors">{t("print")}</button>
         </div>
       </div>
 
       {/* 1RM Bar — collapsible */}
       {Object.keys(program.oneRMs).length > 0 && (
-        <details className="mb-4 print:hidden group/rm">
-          <summary className="text-[11px] text-neutral-600 cursor-pointer hover:text-neutral-400 transition-colors select-none mb-2">
-            1RM values <span className="text-neutral-700">({Object.values(program.oneRMs).filter(v => v > 0).length} exercises)</span>
+        <details className="mb-6 print:hidden group/rm">
+          <summary className="text-[13px] text-neutral-600 cursor-pointer hover:text-neutral-400 transition-colors select-none mb-3">
+            {t("oneRMValues")} <span className="text-neutral-700 ml-1">({Object.values(program.oneRMs).filter(v => v > 0).length} {t("set")})</span>
           </summary>
-          <div className="flex flex-wrap gap-1.5">
+          <div className="flex flex-wrap gap-2">
             {Object.entries(program.oneRMs).map(([exId, rm]) => (
-              <div key={exId} className="flex items-center gap-1.5 bg-[#111] rounded-lg px-2.5 py-1 border border-[#1a1a1a]">
-                <span className="text-[11px] text-neutral-500">{allExercises.find((e) => e.id === exId)?.name || exId}</span>
+              <div key={exId} className="flex items-center gap-2 bg-[#111] rounded-xl px-3 py-1.5 border border-[#1a1a1a]">
+                <span className="text-[13px] text-neutral-500">{allExercises.find((e) => e.id === exId)?.name || exId}</span>
                 <input type="number" min={0} step={2.5} value={rm || ""}
                   onChange={(e) => saveOneRMs({ ...program.oneRMs, [exId]: parseFloat(e.target.value) || 0 })}
-                  className="w-14 bg-[#0c0c0c] border border-[#1e1e1e] rounded px-1 py-0.5 text-[12px] text-white tabular-nums focus:border-bordeaux-700 focus:outline-none text-center" />
+                  className="w-16 bg-[#0a0a0a] border border-[#1e1e1e] rounded-lg px-2 py-1 text-[13px] text-white tabular-nums focus:border-bordeaux-700/60 focus:outline-none text-center" />
               </div>
             ))}
           </div>
@@ -265,22 +279,22 @@ export default function ProgramEditorPage() {
 
       {/* RPE Table */}
       {showRPETable && (
-        <div className="card p-4 mb-4 overflow-x-auto print:hidden">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="text-[13px] text-neutral-300">RPE Chart — %1RM by Reps</h3>
-            <button onClick={() => setRpeTable({ ...DEFAULT_RPE_TABLE })} className="text-[10px] text-neutral-600 hover:text-neutral-400 transition-colors">Reset</button>
+        <div className="card p-5 mb-6 overflow-x-auto print:hidden">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-[14px] font-medium text-neutral-300">{t("rpeChart")}</h3>
+            <button onClick={() => setRpeTable({ ...DEFAULT_RPE_TABLE })} className="text-[12px] text-neutral-600 hover:text-neutral-400 transition-colors">{t("resetDefaults")}</button>
           </div>
-          <table className="w-full text-[11px] border-collapse">
-            <thead><tr><th className="text-left text-neutral-600 p-1 w-14">RPE</th>
-              {REP_RANGE.map((r) => <th key={r} className="text-center text-neutral-600 p-1">{r}</th>)}
+          <table className="w-full text-[12px] border-collapse">
+            <thead><tr><th className="text-left text-neutral-600 p-1.5 w-14">RPE</th>
+              {REP_RANGE.map((r) => <th key={r} className="text-center text-neutral-600 p-1.5">{r}</th>)}
             </tr></thead>
             <tbody>{RPE_VALUES.map((rpe) => (
               <tr key={rpe}>
-                <td className="tabular-nums text-neutral-400 p-1 font-medium">{rpe}</td>
+                <td className="tabular-nums text-neutral-400 p-1.5 font-medium">{rpe}</td>
                 {rpeTable[rpe].map((val, i) => (
                   <td key={i} className="p-0.5"><input type="number" value={val}
                     onChange={(e) => { const t = { ...rpeTable }; t[rpe] = [...t[rpe]]; t[rpe][i] = parseInt(e.target.value) || 0; setRpeTable(t); }}
-                    className="w-full text-center bg-transparent border border-[#1e1e1e] rounded px-1 py-0.5 text-neutral-300 focus:border-bordeaux-700 focus:outline-none tabular-nums" /></td>
+                    className="w-full text-center bg-transparent border border-[#1a1a1a] rounded-lg px-1 py-1 text-neutral-300 focus:border-bordeaux-700/60 focus:outline-none tabular-nums" /></td>
                 ))}
               </tr>
             ))}</tbody>
@@ -290,36 +304,36 @@ export default function ProgramEditorPage() {
 
       {/* CHARTS */}
       {view === "charts" && summaries.length > 0 && (
-        <div className="space-y-5 print:hidden">
+        <div className="space-y-6 print:hidden">
           {[
-            { title: "Volume (kg)", data: summaries.map((s) => ({ week: s.weekNumber, value: s.totalVolume })), color: "#6b3345", peak: peakVol, peakVal: peakVol?.totalVolume, suffix: " kg" },
-            { title: "Avg Intensity (%1RM)", data: summaries.map((s) => ({ week: s.weekNumber, value: s.avgIntensity })), color: "#b08d57", peak: peakInt, peakVal: peakInt?.avgIntensity, suffix: "%", domain: [50, 100] as [number, number] },
+            { title: t("volume"), data: summaries.map((s) => ({ week: s.weekNumber, value: s.totalVolume })), color: "#6b3345", peak: peakVol, peakVal: peakVol?.totalVolume, suffix: " kg" },
+            { title: t("avgIntensity"), data: summaries.map((s) => ({ week: s.weekNumber, value: s.avgIntensity })), color: "#b08d57", peak: peakInt, peakVal: peakInt?.avgIntensity, suffix: "%", domain: [50, 100] as [number, number] },
           ].map(({ title, data, color, peak, peakVal, suffix, domain }) => (
             <div key={title}>
-              <h3 className="text-[13px] text-neutral-400 mb-2">{title}</h3>
-              <div className="h-44 card p-4">
+              <h3 className="text-[14px] font-medium text-neutral-400 mb-3">{title}</h3>
+              <div className="h-48 card p-5">
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={addTrend(data)} margin={{ top: 5, right: 20, bottom: 5, left: 10 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#161616" />
-                    <XAxis dataKey="week" tick={{ fill: "#444", fontSize: 10 }} tickFormatter={(v) => `W${v}`} />
-                    <YAxis tick={{ fill: "#444", fontSize: 10 }} domain={domain} />
-                    <Tooltip contentStyle={{ background: "#111", border: "1px solid #222", borderRadius: 8, fontSize: 11 }} />
-                    <Line type="monotone" dataKey="value" stroke={color} strokeWidth={1.5} dot={{ fill: color, r: 2.5 }} name={title} />
-                    <Line type="monotone" dataKey="trend" stroke="#333" strokeWidth={1} strokeDasharray="4 4" dot={false} name="Trend" />
+                    <CartesianGrid strokeDasharray="3 3" stroke="#151515" />
+                    <XAxis dataKey="week" tick={{ fill: "#444", fontSize: 11 }} tickFormatter={(v) => `W${v}`} />
+                    <YAxis tick={{ fill: "#444", fontSize: 11 }} domain={domain} />
+                    <Tooltip contentStyle={{ background: "#111", border: "1px solid #1e1e1e", borderRadius: 12, fontSize: 12 }} />
+                    <Line type="monotone" dataKey="value" stroke={color} strokeWidth={2} dot={{ fill: color, r: 3 }} name={title} />
+                    <Line type="monotone" dataKey="trend" stroke="#282828" strokeWidth={1} strokeDasharray="4 4" dot={false} name="Trend" />
                     {peak && <ReferenceDot x={peak.weekNumber} y={peakVal} r={5} fill={color} stroke="#fff" strokeWidth={1.5} />}
                   </LineChart>
                 </ResponsiveContainer>
               </div>
             </div>
           ))}
-          <div className="grid grid-cols-2 gap-3">
-            <div className="card p-4">
-              <p className="text-[11px] text-neutral-600">Peak Volume</p>
-              <p className="text-base tabular-nums text-neutral-200 mt-0.5">W{peakVol?.weekNumber} — {peakVol?.totalVolume.toLocaleString()} kg</p>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="card p-5">
+              <p className="text-[12px] text-neutral-600">{t("peakVolume")}</p>
+              <p className="text-lg font-semibold tabular-nums text-neutral-200 mt-1">W{peakVol?.weekNumber}  ·  {peakVol?.totalVolume.toLocaleString()} kg</p>
             </div>
-            <div className="card p-4">
-              <p className="text-[11px] text-neutral-600">Peak Intensity</p>
-              <p className="text-base tabular-nums text-neutral-200 mt-0.5">W{peakInt?.weekNumber} — {peakInt?.avgIntensity}%</p>
+            <div className="card p-5">
+              <p className="text-[12px] text-neutral-600">{t("peakIntensity")}</p>
+              <p className="text-lg font-semibold tabular-nums text-neutral-200 mt-1">W{peakInt?.weekNumber}  ·  {peakInt?.avgIntensity}%</p>
             </div>
           </div>
         </div>
@@ -327,23 +341,22 @@ export default function ProgramEditorPage() {
 
       {/* SUMMARY */}
       {view === "summary" && (
-        <div className="card overflow-hidden divide-y divide-[#1e1e1e]">
+        <div className="card overflow-hidden divide-y divide-[#181818]">
           {program.weeks.map((week) => {
             const s = getWeekSummary(week);
             const volPct = peakVol && peakVol.totalVolume > 0 ? (s.totalVolume / peakVol.totalVolume) * 100 : 0;
             return (
-              <div key={week.id} className="flex items-center gap-4 px-5 py-3">
-                <span className="text-[13px] tabular-nums text-neutral-500 w-10">W{week.weekNumber}</span>
-                {/* Volume bar */}
+              <div key={week.id} className="flex items-center gap-5 px-5 py-3.5">
+                <span className="text-[14px] tabular-nums text-neutral-500 w-12 font-medium">W{week.weekNumber}</span>
                 <div className="flex-1 relative">
-                  <div className="h-1.5 bg-[#1a1a1a] rounded-full overflow-hidden">
-                    <div className="h-full bg-bordeaux-700/50 rounded-full transition-all duration-500" style={{ width: `${volPct}%` }} />
+                  <div className="h-2 bg-[#151515] rounded-full overflow-hidden">
+                    <div className="h-full bg-bordeaux-700/40 rounded-full transition-all duration-500" style={{ width: `${volPct}%` }} />
                   </div>
                 </div>
-                <div className="grid grid-cols-3 gap-6 text-[12px] w-80 text-right">
-                  <div><span className="text-neutral-600">Vol </span><span className="text-neutral-300 tabular-nums">{s.totalVolume.toLocaleString()}</span></div>
-                  <div><span className="text-neutral-600">Reps </span><span className="text-neutral-300 tabular-nums">{s.totalReps}</span></div>
-                  <div><span className="text-neutral-600">% </span><span className="text-neutral-300 tabular-nums">{s.avgIntensity > 0 ? `${s.avgIntensity}` : "—"}</span></div>
+                <div className="grid grid-cols-3 gap-8 text-[13px] w-80 text-right">
+                  <div><span className="text-neutral-600">{t("vol")} </span><span className="text-neutral-300 tabular-nums">{s.totalVolume.toLocaleString()}</span></div>
+                  <div><span className="text-neutral-600">{t("reps")} </span><span className="text-neutral-300 tabular-nums">{s.totalReps}</span></div>
+                  <div><span className="text-neutral-600">{t("int")} </span><span className="text-neutral-300 tabular-nums">{s.avgIntensity > 0 ? `${s.avgIntensity}%` : "—"}</span></div>
                 </div>
               </div>
             );
@@ -357,29 +370,29 @@ export default function ProgramEditorPage() {
           <table className="w-full border-collapse">
             <thead>
               <tr>
-                <th className="text-left text-[11px] text-neutral-600 p-2 w-16 sticky left-0 bg-[#0c0c0c] z-10 print:bg-white"></th>
+                <th className="text-left text-[12px] text-neutral-600 p-2.5 w-16 sticky left-0 bg-[#0a0a0a] z-10 print:bg-white"></th>
                 {Array.from({ length: program.daysPerWeek }, (_, i) => {
                   const firstWeekDay = program.weeks[0]?.days[i];
                   const label = firstWeekDay?.label;
                   return (
-                    <th key={i} className="text-left text-[12px] text-neutral-500 p-2 min-w-[220px] print:min-w-0 font-normal">
+                    <th key={i} className="text-left text-[13px] text-neutral-400 p-2.5 min-w-[230px] print:min-w-0 font-medium">
                       {editingLabel?.dayId === firstWeekDay?.id ? (
                         <input type="text" autoFocus value={editingLabel.value}
                           onChange={(e) => setEditingLabel({ ...editingLabel, value: e.target.value })}
                           onBlur={() => saveDayLabel(firstWeekDay.id, editingLabel.value)}
                           onKeyDown={(e) => { if (e.key === "Enter") saveDayLabel(firstWeekDay.id, editingLabel.value); }}
-                          className="bg-[#111] border border-bordeaux-700 rounded px-2 py-0.5 text-[12px] text-white focus:outline-none w-28" />
+                          className="bg-[#111] border border-bordeaux-700/50 rounded-lg px-2.5 py-1 text-[13px] text-white focus:outline-none w-32" />
                       ) : (
-                        <span className="cursor-pointer hover:text-neutral-300 transition-colors group/label"
+                        <span className="cursor-pointer hover:text-neutral-200 transition-colors group/label"
                           onClick={() => setEditingLabel({ dayId: firstWeekDay?.id || "", value: label || "" })}>
                           {label || `Day ${i + 1}`}
-                          <span className="text-neutral-700 ml-1.5 text-[9px] opacity-0 group-hover/label:opacity-100 transition-opacity">edit</span>
+                          <span className="text-neutral-700 ml-2 text-[10px] opacity-0 group-hover/label:opacity-100 transition-opacity">edit</span>
                         </span>
                       )}
                     </th>
                   );
                 })}
-                <th className="text-left text-[11px] text-neutral-600 p-2 w-44 print:hidden font-normal">Summary</th>
+                <th className="text-left text-[12px] text-neutral-600 p-2.5 w-44 print:hidden font-normal">{t("summary")}</th>
               </tr>
             </thead>
             <tbody>
@@ -387,15 +400,15 @@ export default function ProgramEditorPage() {
                 const summary = getWeekSummary(week);
                 const hasExercises = week.days.some((d) => d.exercises.length > 0);
                 return (
-                  <tr key={week.id} className="border-t border-[#161616] align-top print:break-inside-avoid">
-                    <td className="text-[13px] tabular-nums text-neutral-600 p-2 sticky left-0 bg-[#0c0c0c] z-10 print:bg-white">
+                  <tr key={week.id} className="border-t border-[#141414] align-top print:break-inside-avoid">
+                    <td className="text-[14px] tabular-nums text-neutral-600 p-2.5 sticky left-0 bg-[#0a0a0a] z-10 print:bg-white font-medium">
                       <div>W{week.weekNumber}</div>
-                      <div className="mt-1 space-y-0.5 print:hidden">
+                      <div className="mt-1.5 space-y-1 print:hidden">
                         {wIdx > 0 && !hasExercises && (
-                          <button onClick={() => copyWeek(wIdx - 1, wIdx)} className="text-[9px] text-bordeaux-500/60 hover:text-bordeaux-400 block transition-colors">Copy W{week.weekNumber - 1}</button>
+                          <button onClick={() => copyWeek(wIdx - 1, wIdx)} className="text-[11px] text-bordeaux-500/60 hover:text-bordeaux-400 block transition-colors">Copy W{week.weekNumber - 1}</button>
                         )}
                         {wIdx < program.weeks.length - 1 && hasExercises && (
-                          <button onClick={() => copyWeek(wIdx, wIdx + 1)} className="text-[9px] text-neutral-700 hover:text-neutral-500 block transition-colors">Copy to W{week.weekNumber + 1}</button>
+                          <button onClick={() => copyWeek(wIdx, wIdx + 1)} className="text-[11px] text-neutral-700 hover:text-neutral-500 block transition-colors">Copy to W{week.weekNumber + 1}</button>
                         )}
                       </div>
                     </td>
@@ -404,96 +417,96 @@ export default function ProgramEditorPage() {
                       const dayComplete = day.exercises.length > 0 && day.exercises.every((e) => e.actualSets !== null);
                       return (
                         <td key={day.id}
-                          className={`p-2 border-l border-[#131313] cursor-pointer transition-colors duration-100 ${isActive ? "bg-[#111]" : "hover:bg-[#0f0f0f]"} ${dayComplete ? "bg-emerald-950/5" : ""}`}
+                          className={`p-2 border-l border-[#111] cursor-pointer transition-all duration-200 ${isActive ? "bg-[#0f0f0f]" : "hover:bg-[#0d0d0d]"} ${dayComplete ? "bg-emerald-950/5" : ""}`}
                           onClick={() => { setActiveCell({ week: wIdx, day: dIdx }); setShowSearch(false); setSearchQuery(""); }}>
 
-                          <div className="space-y-1">
+                          <div className="space-y-1.5">
                             {day.exercises.map((ex, eIdx) => {
                               const oneRM = program.oneRMs[ex.exerciseId] || 0;
                               const suggestion = getSuggestion(wIdx, dIdx, ex.exerciseId);
                               const hasActuals = ex.actualSets !== null;
                               return (
-                                <div key={ex.id} className={`rounded-lg px-2.5 py-2 transition-colors group/ex ${
-                                  hasActuals ? "bg-emerald-500/[0.03] border border-emerald-500/10" : "bg-[#111] border border-[#1a1a1a]"
+                                <div key={ex.id} className={`rounded-xl px-3 py-2.5 transition-all duration-200 group/ex ${
+                                  hasActuals ? "bg-emerald-500/[0.04] border border-emerald-500/10" : "bg-[#111] border border-[#181818]"
                                 }`}>
-                                  {/* Row 1: Name + quick summary */}
-                                  <div className="flex items-center justify-between">
-                                    <span className="text-[12px] font-medium text-neutral-200">{ex.exerciseName}</span>
-                                    <div className="flex items-center gap-2">
-                                      <span className="text-[11px] text-neutral-500 tabular-nums">
-                                        {ex.sets}x{ex.reps}
-                                        {ex.loadKg ? ` @ ${ex.loadKg}kg` : ex.intensityPercent ? ` @ ${ex.intensityPercent}%` : ""}
-                                        {ex.rpe ? ` RPE${ex.rpe}` : ""}
+                                  {/* Row 1: Name + clean summary */}
+                                  <div className="flex items-start justify-between gap-2">
+                                    <div className="min-w-0">
+                                      <span className="text-[13px] font-semibold text-neutral-100 block">{ex.exerciseName}</span>
+                                      <span className="text-[12px] text-neutral-500 tabular-nums mt-0.5 block">
+                                        {formatExSummary(ex)}
                                       </span>
-                                      <button onClick={(e) => { e.stopPropagation(); removeExercise(wIdx, dIdx, eIdx); }}
-                                        className="text-neutral-800 hover:text-red-400 text-[11px] transition-colors leading-none opacity-0 group-hover/ex:opacity-100 print:hidden">x</button>
                                     </div>
+                                    <button onClick={(e) => { e.stopPropagation(); removeExercise(wIdx, dIdx, eIdx); }}
+                                      className="text-neutral-800 hover:text-red-400 text-[13px] transition-colors leading-none opacity-0 group-hover/ex:opacity-100 print:hidden mt-0.5 shrink-0">×</button>
                                   </div>
 
                                   {/* Suggestion */}
                                   {suggestion && !ex.loadKg && (
                                     <button onClick={(e) => { e.stopPropagation(); updateExercise(wIdx, dIdx, eIdx, suggestion); }}
-                                      className="text-[10px] text-bordeaux-500/70 hover:text-bordeaux-400 mt-0.5 block print:hidden transition-colors">
-                                      Apply: {suggestion.sets}x{suggestion.reps} @ {suggestion.loadKg}kg
+                                      className="text-[11px] text-bordeaux-500/70 hover:text-bordeaux-400 mt-1 block print:hidden transition-colors">
+                                      {t("apply")}: {suggestion.sets} × {suggestion.reps} · {suggestion.loadKg} kg
                                     </button>
                                   )}
 
-                                  {/* Row 2: Editable fields — compact inline */}
+                                  {/* Row 2: Editable fields */}
                                   {isActive && (
-                                    <div className="mt-2 print:hidden" onClick={(e) => e.stopPropagation()}>
-                                      <div className="grid grid-cols-4 gap-1 text-[11px]">
+                                    <div className="mt-3 print:hidden" onClick={(e) => e.stopPropagation()}>
+                                      <div className="grid grid-cols-4 gap-1.5 text-[12px]">
                                         {[
-                                          { label: "Sets", val: ex.sets, key: "sets", parse: parseInt },
-                                          { label: "Reps", val: ex.reps, key: "reps", parse: parseInt },
+                                          { label: t("sets"), val: ex.sets, key: "sets", parse: parseInt },
+                                          { label: t("reps"), val: ex.reps, key: "reps", parse: parseInt },
                                           { label: "%1RM", val: ex.intensityPercent, key: "intensityPercent", parse: parseFloat },
-                                          { label: "kg", val: ex.loadKg, key: "loadKg", parse: parseFloat },
+                                          { label: t("kg"), val: ex.loadKg, key: "loadKg", parse: parseFloat },
                                         ].map(({ label, val, key, parse }) => (
                                           <div key={key}>
-                                            <label className="text-[9px] text-neutral-600">{label}</label>
+                                            <label className="text-[10px] text-neutral-600 mb-0.5 block">{label}</label>
                                             <input type="number" value={val ?? ""}
                                               onChange={(e) => updateExercise(wIdx, dIdx, eIdx, { [key]: e.target.value ? parse(e.target.value) : null } as any)}
-                                              className="w-full bg-[#0c0c0c] border border-[#1e1e1e] rounded px-1 py-0.5 text-neutral-200 focus:border-bordeaux-700 focus:outline-none text-center tabular-nums" />
+                                              className="w-full bg-[#0a0a0a] border border-[#1c1c1c] rounded-lg px-1.5 py-1 text-neutral-200 focus:border-bordeaux-700/60 focus:outline-none text-center tabular-nums" />
                                           </div>
                                         ))}
                                       </div>
-                                      <div className="grid grid-cols-3 gap-1 mt-1 text-[11px]">
+                                      <div className="grid grid-cols-3 gap-1.5 mt-1.5 text-[12px]">
                                         <div>
-                                          <label className="text-[9px] text-neutral-600">RPE</label>
+                                          <label className="text-[10px] text-neutral-600 mb-0.5 block">RPE</label>
                                           <select value={ex.rpe ?? ""}
                                             onChange={(e) => updateExercise(wIdx, dIdx, eIdx, { rpe: e.target.value ? parseFloat(e.target.value) : null })}
-                                            className="w-full bg-[#0c0c0c] border border-[#1e1e1e] rounded px-0 py-0.5 text-neutral-200 focus:border-bordeaux-700 focus:outline-none text-center">
+                                            className="w-full bg-[#0a0a0a] border border-[#1c1c1c] rounded-lg px-0 py-1 text-neutral-200 focus:border-bordeaux-700/60 focus:outline-none text-center">
                                             <option value="">—</option>
                                             {RPE_VALUES.map((v) => <option key={v} value={v}>{v}</option>)}
                                           </select>
                                         </div>
                                         <div className="col-span-2">
-                                          <label className="text-[9px] text-neutral-600">Notes</label>
+                                          <label className="text-[10px] text-neutral-600 mb-0.5 block">{t("notes")}</label>
                                           <input type="text" value={ex.notes || ""} placeholder="..."
                                             onChange={(e) => updateExercise(wIdx, dIdx, eIdx, { notes: e.target.value || null })}
-                                            className="w-full bg-[#0c0c0c] border border-[#1e1e1e] rounded px-1.5 py-0.5 text-neutral-300 focus:border-bordeaux-700 focus:outline-none text-[10px]" />
+                                            className="w-full bg-[#0a0a0a] border border-[#1c1c1c] rounded-lg px-2 py-1 text-neutral-300 focus:border-bordeaux-700/60 focus:outline-none text-[11px]" />
                                         </div>
                                       </div>
-                                      {/* Actuals row */}
-                                      <div className="grid grid-cols-3 gap-1 mt-1.5 pt-1.5 border-t border-[#1a1a1a] text-[11px]">
-                                        <div className="col-span-3 text-[9px] text-neutral-600 mb-0.5">Actuals</div>
-                                        {[
-                                          { label: "Sets", val: ex.actualSets, key: "actualSets", parse: parseInt },
-                                          { label: "Reps", val: ex.actualReps, key: "actualReps", parse: parseInt },
-                                          { label: "kg", val: ex.actualLoadKg, key: "actualLoadKg", parse: parseFloat },
-                                        ].map(({ label, val, key, parse }) => (
-                                          <div key={key}>
-                                            <input type="number" value={val ?? ""} placeholder={label}
-                                              onChange={(e) => updateExercise(wIdx, dIdx, eIdx, { [key]: e.target.value ? parse(e.target.value) : null } as any)}
-                                              className="w-full bg-[#0c0c0c] border border-[#1e1e1e] rounded px-1 py-0.5 text-neutral-200 placeholder-neutral-700 focus:border-bordeaux-700 focus:outline-none text-center tabular-nums" />
-                                          </div>
-                                        ))}
+                                      {/* Actuals */}
+                                      <div className="mt-2.5 pt-2.5 border-t border-[#181818]">
+                                        <p className="text-[10px] text-neutral-600 mb-1.5 font-medium uppercase tracking-wider">{t("actuals")}</p>
+                                        <div className="grid grid-cols-3 gap-1.5 text-[12px]">
+                                          {[
+                                            { label: t("sets"), val: ex.actualSets, key: "actualSets", parse: parseInt },
+                                            { label: t("reps"), val: ex.actualReps, key: "actualReps", parse: parseInt },
+                                            { label: t("kg"), val: ex.actualLoadKg, key: "actualLoadKg", parse: parseFloat },
+                                          ].map(({ label, val, key, parse }) => (
+                                            <div key={key}>
+                                              <input type="number" value={val ?? ""} placeholder={label}
+                                                onChange={(e) => updateExercise(wIdx, dIdx, eIdx, { [key]: e.target.value ? parse(e.target.value) : null } as any)}
+                                                className="w-full bg-[#0a0a0a] border border-[#1c1c1c] rounded-lg px-1.5 py-1 text-neutral-200 placeholder-neutral-700 focus:border-bordeaux-700/60 focus:outline-none text-center tabular-nums" />
+                                            </div>
+                                          ))}
+                                        </div>
                                       </div>
                                       {/* Actions */}
-                                      <div className="flex items-center gap-2 mt-1.5 text-[9px]">
+                                      <div className="flex items-center gap-3 mt-2.5 text-[11px]">
                                         <button onClick={(e) => { e.stopPropagation(); copyExerciseToAllWeeks(ex, day.dayNumber); }}
-                                          className="text-neutral-600 hover:text-bordeaux-500 transition-colors">Copy to all weeks</button>
-                                        {oneRM > 0 && <span className="text-neutral-700">1RM {oneRM}kg</span>}
-                                        {ex.loadKg && ex.sets > 0 && ex.reps > 0 && <span className="text-neutral-700">Vol {(ex.sets * ex.reps * ex.loadKg).toLocaleString()}kg</span>}
+                                          className="text-neutral-600 hover:text-bordeaux-400 transition-colors">{t("copyToAllWeeks")}</button>
+                                        {oneRM > 0 && <span className="text-neutral-700">1RM {oneRM} kg</span>}
+                                        {ex.loadKg && ex.sets > 0 && ex.reps > 0 && <span className="text-neutral-700">Vol {(ex.sets * ex.reps * ex.loadKg).toLocaleString()} kg</span>}
                                       </div>
                                     </div>
                                   )}
@@ -504,59 +517,59 @@ export default function ProgramEditorPage() {
 
                           {/* Actions */}
                           {isActive && (
-                            <div className="mt-2 space-y-1 print:hidden" onClick={(e) => e.stopPropagation()}>
+                            <div className="mt-2.5 space-y-1.5 print:hidden" onClick={(e) => e.stopPropagation()}>
                               {!showSearch ? (
-                                <div className="flex gap-1.5">
+                                <div className="flex gap-2">
                                   <button onClick={() => setShowSearch(true)}
-                                    className="flex-1 text-[11px] text-neutral-700 hover:text-neutral-400 border border-dashed border-[#1e1e1e] hover:border-[#333] rounded-lg py-1.5 transition-colors">
-                                    + Exercise
+                                    className="flex-1 text-[12px] text-neutral-600 hover:text-neutral-300 border border-dashed border-[#1c1c1c] hover:border-[#303030] rounded-xl py-2 transition-all duration-200">
+                                    {t("addExercise")}
                                   </button>
                                   {day.exercises.length > 0 && !dayComplete && (
                                     <button onClick={() => completeDay(day.id)}
-                                      className="text-[10px] bg-emerald-500/[0.06] text-emerald-500/70 border border-emerald-500/10 rounded-lg px-2.5 py-1.5 hover:bg-emerald-500/10 transition-colors">
-                                      Complete
+                                      className="text-[11px] bg-emerald-500/[0.06] text-emerald-500/70 border border-emerald-500/10 rounded-xl px-3.5 py-2 hover:bg-emerald-500/10 transition-all duration-200">
+                                      {t("complete")}
                                     </button>
                                   )}
                                 </div>
                               ) : (
-                                <div className="space-y-1">
+                                <div className="space-y-1.5">
                                   <input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
-                                    placeholder="Search exercises..." autoFocus className="input-field text-[12px] py-1.5" />
-                                  <div className="max-h-44 overflow-y-auto card divide-y divide-[#1e1e1e]">
+                                    placeholder={t("searchExercises")} autoFocus className="input-field text-[13px] py-2" />
+                                  <div className="max-h-48 overflow-y-auto card divide-y divide-[#181818]">
                                     {filtered.slice(0, 15).map((ex) => (
                                       <button key={ex.id} onClick={() => addExercise(wIdx, dIdx, ex)}
-                                        className="w-full text-left px-2.5 py-2 hover:bg-[#181818] flex justify-between items-center text-[12px] transition-colors">
+                                        className="w-full text-left px-3 py-2.5 hover:bg-[#161616] flex justify-between items-center text-[13px] transition-colors">
                                         <span className="text-neutral-300">{ex.name}</span>
-                                        <span className="text-[9px] text-neutral-600 uppercase">{catLabel[ex.category]}</span>
+                                        <span className="text-[10px] text-neutral-600 uppercase tracking-wider">{catLabel[ex.category]}</span>
                                       </button>
                                     ))}
                                     {filtered.length === 0 && searchQuery && (
                                       <button onClick={() => addCustomExercise(searchQuery)}
-                                        className="w-full text-left px-2.5 py-2 hover:bg-[#181818] text-[12px] text-bordeaux-500">
-                                        + Add &quot;{searchQuery}&quot; as custom
+                                        className="w-full text-left px-3 py-2.5 hover:bg-[#161616] text-[13px] text-bordeaux-400">
+                                        + {t("addAsCustom")} &quot;{searchQuery}&quot;
                                       </button>
                                     )}
                                   </div>
                                   <button onClick={() => { setShowSearch(false); setSearchQuery(""); }}
-                                    className="text-[10px] text-neutral-700 hover:text-neutral-500 transition-colors">Cancel</button>
+                                    className="text-[11px] text-neutral-700 hover:text-neutral-500 transition-colors">{t("cancel")}</button>
                                 </div>
                               )}
                             </div>
                           )}
 
                           {day.exercises.length === 0 && !isActive && (
-                            <div className="text-[10px] text-neutral-700 py-4 text-center border border-dashed border-[#1a1a1a] rounded-lg">
-                              + Click to add exercises
+                            <div className="text-[12px] text-neutral-700 py-5 text-center border border-dashed border-[#181818] rounded-xl">
+                              {t("clickToAdd")}
                             </div>
                           )}
                         </td>
                       );
                     })}
-                    <td className="p-2 border-l border-[#131313] align-top print:hidden">
-                      <div className="text-[11px] space-y-1 card p-2.5">
-                        <div className="flex justify-between"><span className="text-neutral-600">Vol</span><span className="text-neutral-400 tabular-nums">{summary.totalVolume.toLocaleString()}</span></div>
-                        <div className="flex justify-between"><span className="text-neutral-600">Reps</span><span className="text-neutral-400 tabular-nums">{summary.totalReps}</span></div>
-                        <div className="flex justify-between"><span className="text-neutral-600">%</span><span className="text-neutral-400 tabular-nums">{summary.avgIntensity > 0 ? `${summary.avgIntensity}` : "—"}</span></div>
+                    <td className="p-2.5 border-l border-[#111] align-top print:hidden">
+                      <div className="text-[12px] space-y-1.5 card p-3.5">
+                        <div className="flex justify-between"><span className="text-neutral-600">{t("vol")}</span><span className="text-neutral-400 tabular-nums">{summary.totalVolume.toLocaleString()}</span></div>
+                        <div className="flex justify-between"><span className="text-neutral-600">{t("reps")}</span><span className="text-neutral-400 tabular-nums">{summary.totalReps}</span></div>
+                        <div className="flex justify-between"><span className="text-neutral-600">{t("int")}</span><span className="text-neutral-400 tabular-nums">{summary.avgIntensity > 0 ? `${summary.avgIntensity}%` : "—"}</span></div>
                       </div>
                     </td>
                   </tr>

@@ -4,23 +4,25 @@
 
 @layer base {
   body {
-    @apply bg-[#0c0c0c] text-neutral-200 antialiased;
+    @apply bg-[#0a0a0a] text-neutral-200 antialiased;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    -webkit-font-smoothing: antialiased;
   }
 
   /* Custom scrollbar */
   ::-webkit-scrollbar {
-    width: 5px;
-    height: 5px;
+    width: 6px;
+    height: 6px;
   }
   ::-webkit-scrollbar-track {
     background: transparent;
   }
   ::-webkit-scrollbar-thumb {
-    background: #2a2a2a;
+    background: #222;
     border-radius: 999px;
   }
   ::-webkit-scrollbar-thumb:hover {
-    background: #444;
+    background: #3a3a3a;
   }
 
   /* Hide number input spinners */
@@ -34,33 +36,45 @@
   }
 
   ::selection {
-    background: rgba(107, 51, 69, 0.35);
+    background: rgba(107, 51, 69, 0.3);
   }
 }
 
 @layer components {
+  /* Cards */
   .card {
-    @apply bg-[#141414] border border-[#1e1e1e] rounded-xl;
+    @apply bg-[#121212] border border-[#1c1c1c] rounded-2xl;
   }
   .card-hover {
-    @apply card hover:border-[#2a2a2a] hover:bg-[#181818] transition-all duration-150;
+    @apply card hover:border-[#282828] hover:bg-[#151515] transition-all duration-200;
   }
+
+  /* Inputs */
   .input-field {
-    @apply w-full bg-[#111] border border-[#222] rounded-lg px-3 py-2 text-sm text-neutral-100 placeholder-neutral-600 focus:border-bordeaux-600 focus:outline-none transition-colors duration-150;
+    @apply w-full bg-[#0e0e0e] border border-[#1e1e1e] rounded-xl px-3.5 py-2.5 text-[14px] text-neutral-100 placeholder-neutral-600 focus:border-bordeaux-700/60 focus:outline-none focus:ring-1 focus:ring-bordeaux-700/20 transition-all duration-200;
   }
+
+  /* Buttons */
   .btn-primary {
-    @apply bg-bordeaux-700 hover:bg-bordeaux-600 active:bg-bordeaux-800 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors duration-150;
+    @apply bg-bordeaux-700 hover:bg-bordeaux-600 active:bg-bordeaux-800 text-white/90 text-[14px] font-medium px-5 py-2.5 rounded-xl transition-all duration-200;
   }
   .btn-secondary {
-    @apply border border-[#2a2a2a] text-neutral-400 text-sm px-4 py-2 rounded-lg hover:bg-[#181818] hover:text-neutral-200 hover:border-[#333] transition-all duration-150;
+    @apply border border-[#252525] text-neutral-400 text-[14px] px-5 py-2.5 rounded-xl hover:bg-[#161616] hover:text-neutral-200 hover:border-[#303030] transition-all duration-200;
   }
   .btn-ghost {
-    @apply text-neutral-500 text-sm px-3 py-1.5 rounded-lg hover:bg-[#181818] hover:text-neutral-300 transition-all duration-150;
+    @apply text-neutral-500 text-[14px] px-3.5 py-2 rounded-xl hover:bg-[#161616] hover:text-neutral-300 transition-all duration-200;
   }
+
+  /* Labels & Titles */
   .label {
-    @apply text-xs text-neutral-500 block mb-1.5;
+    @apply text-[13px] text-neutral-500 block mb-1.5 font-normal;
   }
   .section-title {
-    @apply text-[11px] font-medium text-neutral-500 uppercase tracking-widest;
+    @apply text-[12px] font-semibold text-neutral-500 uppercase tracking-wider;
+  }
+
+  /* Status pills */
+  .pill {
+    @apply text-[11px] px-2.5 py-1 rounded-full font-medium;
   }
 }
