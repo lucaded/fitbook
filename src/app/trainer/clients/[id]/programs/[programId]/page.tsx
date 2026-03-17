@@ -385,12 +385,9 @@ export default function ProgramEditorPage() {
                   const dayLabel = program.weeks[0]?.days[dIdx]?.label || `Day ${dIdx + 1}`;
                   return (
                     <div key={day.id}
-                      className={`px-4 py-3 border-b border-[#111] last:border-b-0 ${isDayActive ? "bg-[#0f0f0f]" : ""} ${dayComplete ? "bg-emerald-950/5" : ""}`}>
-                      <div className="flex items-center justify-between mb-2 cursor-pointer"
-                        onClick={() => { setActiveCell(isDayActive ? null : { week: wIdx, day: dIdx }); setShowSearch(false); setSearchQuery(""); }}>
-                        <p className="text-[12px] text-neutral-500 font-medium">{dayLabel}</p>
-                        <span className={`text-[11px] transition-transform ${isDayActive ? "rotate-180" : ""}`}>▾</span>
-                      </div>
+                      className={`px-4 py-3 border-b border-[#111] last:border-b-0 ${dayComplete ? "bg-emerald-950/5" : ""}`}>
+                      <p className="text-[12px] text-neutral-500 font-medium mb-2">{dayLabel}</p>
+                      {/* Exercise cards */}
                       <div className="space-y-1.5">
                         {day.exercises.map((ex, eIdx) => {
                           const oneRM = program.oneRMs[ex.exerciseId] || 0;
@@ -401,7 +398,7 @@ export default function ProgramEditorPage() {
                             <div key={ex.id} className={`rounded-xl px-3 py-2.5 transition-all duration-200 cursor-pointer ${
                               hasActuals ? "bg-emerald-500/[0.04] border border-emerald-500/10" : "bg-[#111] border border-[#181818]"
                             } ${isExActive ? "ring-1 ring-bordeaux-700/30" : ""}`}
-                              onClick={(e) => { e.stopPropagation(); setActiveCell(isExActive ? { week: wIdx, day: dIdx } : { week: wIdx, day: dIdx, exercise: eIdx }); }}>
+                              onClick={() => setActiveCell(isExActive ? null : { week: wIdx, day: dIdx, exercise: eIdx })}>
                               <div className="flex items-start justify-between gap-2">
                                 <div className="min-w-0">
                                   <span className="text-[14px] font-semibold text-white block">{ex.exerciseName}</span>
@@ -477,59 +474,52 @@ export default function ProgramEditorPage() {
                           );
                         })}
                       </div>
-                      {/* Add exercise / search */}
-                      {isDayActive && (
-                        <div className="mt-2.5 space-y-1.5" onClick={(e) => e.stopPropagation()}>
-                          {!showSearch ? (
-                            <div className="flex gap-2">
-                              <button onClick={() => setShowSearch(true)}
-                                className="flex-1 text-[12px] text-neutral-600 hover:text-neutral-300 border border-dashed border-[#1c1c1c] hover:border-[#303030] rounded-xl py-2.5 transition-all duration-200">
-                                {t("addExercise")}
+                      {/* Add exercise button — always visible */}
+                      <div className="mt-2 space-y-1.5">
+                        {!(isDayActive && showSearch) ? (
+                          <div className="flex gap-2">
+                            <button onClick={() => { setActiveCell({ week: wIdx, day: dIdx }); setShowSearch(true); setSearchQuery(""); }}
+                              className="flex-1 text-[12px] text-neutral-600 hover:text-neutral-300 border border-dashed border-[#1c1c1c] hover:border-[#303030] rounded-xl py-2.5 transition-all duration-200">
+                              {t("addExercise")}
+                            </button>
+                            {day.exercises.length > 0 && !dayComplete && (
+                              <button onClick={() => completeDay(day.id)}
+                                className="text-[11px] bg-emerald-500/[0.06] text-emerald-500/70 border border-emerald-500/10 rounded-xl px-3.5 py-2.5 hover:bg-emerald-500/10 transition-all duration-200">
+                                {t("complete")}
                               </button>
-                              {day.exercises.length > 0 && !dayComplete && (
-                                <button onClick={() => completeDay(day.id)}
-                                  className="text-[11px] bg-emerald-500/[0.06] text-emerald-500/70 border border-emerald-500/10 rounded-xl px-3.5 py-2.5 hover:bg-emerald-500/10 transition-all duration-200">
-                                  {t("complete")}
+                            )}
+                          </div>
+                        ) : (
+                          <div className="space-y-1.5 animate-in">
+                            <input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
+                              placeholder={t("searchExercises")} autoFocus className="input-field text-[13px] py-2.5" />
+                            <div className="max-h-60 overflow-y-auto card divide-y divide-[#181818]">
+                              {filtered.slice(0, 15).map((ex) => (
+                                <button key={ex.id} onClick={() => addExercise(wIdx, dIdx, ex)}
+                                  className="w-full text-left px-3 py-3 hover:bg-[#161616] flex justify-between items-center text-[13px] transition-colors">
+                                  <div className="min-w-0">
+                                    <span className="text-neutral-300">{ex.name}</span>
+                                    {ex.defaults && (
+                                      <span className="text-[11px] text-neutral-600 ml-2 tabular-nums">
+                                        {ex.defaults.sets}×{ex.defaults.reps}{ex.defaults.rpe ? ` RPE ${ex.defaults.rpe}` : ""}
+                                      </span>
+                                    )}
+                                  </div>
+                                  <span className="text-[10px] text-neutral-600 uppercase tracking-wider shrink-0 ml-2">{catLabel[ex.category]}</span>
+                                </button>
+                              ))}
+                              {filtered.length === 0 && searchQuery && (
+                                <button onClick={() => addCustomExercise(searchQuery)}
+                                  className="w-full text-left px-3 py-3 hover:bg-[#161616] text-[13px] text-bordeaux-400">
+                                  + {t("addAsCustom")} &quot;{searchQuery}&quot;
                                 </button>
                               )}
                             </div>
-                          ) : (
-                            <div className="space-y-1.5">
-                              <input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
-                                placeholder={t("searchExercises")} autoFocus className="input-field text-[13px] py-2.5" />
-                              <div className="max-h-60 overflow-y-auto card divide-y divide-[#181818]">
-                                {filtered.slice(0, 15).map((ex) => (
-                                  <button key={ex.id} onClick={() => addExercise(wIdx, dIdx, ex)}
-                                    className="w-full text-left px-3 py-3 hover:bg-[#161616] flex justify-between items-center text-[13px] transition-colors">
-                                    <div className="min-w-0">
-                                      <span className="text-neutral-300">{ex.name}</span>
-                                      {ex.defaults && (
-                                        <span className="text-[11px] text-neutral-600 ml-2 tabular-nums">
-                                          {ex.defaults.sets}×{ex.defaults.reps}{ex.defaults.rpe ? ` RPE ${ex.defaults.rpe}` : ""}
-                                        </span>
-                                      )}
-                                    </div>
-                                    <span className="text-[10px] text-neutral-600 uppercase tracking-wider shrink-0 ml-2">{catLabel[ex.category]}</span>
-                                  </button>
-                                ))}
-                                {filtered.length === 0 && searchQuery && (
-                                  <button onClick={() => addCustomExercise(searchQuery)}
-                                    className="w-full text-left px-3 py-3 hover:bg-[#161616] text-[13px] text-bordeaux-400">
-                                    + {t("addAsCustom")} &quot;{searchQuery}&quot;
-                                  </button>
-                                )}
-                              </div>
-                              <button onClick={() => { setShowSearch(false); setSearchQuery(""); }}
-                                className="text-[12px] text-neutral-700 hover:text-neutral-500 transition-colors py-1">{t("cancel")}</button>
-                            </div>
-                          )}
-                        </div>
-                      )}
-                      {day.exercises.length === 0 && !isDayActive && (
-                        <div className="text-[12px] text-neutral-700 py-4 text-center border border-dashed border-[#181818] rounded-xl">
-                          {t("clickToAdd")}
-                        </div>
-                      )}
+                            <button onClick={() => { setShowSearch(false); setSearchQuery(""); setActiveCell(null); }}
+                              className="text-[12px] text-neutral-700 hover:text-neutral-500 transition-colors py-1">{t("cancel")}</button>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   );
                 })}
