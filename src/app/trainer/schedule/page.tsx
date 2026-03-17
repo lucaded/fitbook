@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { useI18n } from "@/lib/i18n";
 import { useToast } from "@/components/Toast";
 import { ConfirmModal } from "@/components/ConfirmModal";
@@ -23,13 +23,22 @@ export default function SchedulePage() {
   const { toast } = useToast();
   const [clients, setClients] = useState<Client[]>([]);
   const [bookings, setBookings] = useState<Booking[]>([]);
-  const [showAdd, setShowAdd] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
   const [weekOffset, setWeekOffset] = useState(0);
-  const [form, setForm] = useState({
-    clientId: "", date: "", startTime: "09:00", endTime: "10:00", type: "PERSONAL" as string, notes: "",
-  });
+
+  // Client filter at top — pre-fills modal when set
+  const [filterClientId, setFilterClientId] = useState("");
+
+  // Booking modal state
+  const [modal, setModal] = useState<{
+    clientId: string; date: string; startTime: string; endTime: string;
+    type: string; notes: string;
+  } | null>(null);
+
+  // Drag state for desktop grid
+  const [drag, setDrag] = useState<{ dayIdx: number; startHour: number; endHour: number } | null>(null);
+  const dragging = useRef(false);
 
   useEffect(() => { fetch("/api/clients").then((r) => r.json()).then(setClients); }, []);
 
@@ -49,44 +58,65 @@ export default function SchedulePage() {
 
   useEffect(() => { loadBookings(); }, [weekOffset]);
 
-  const openFormForSlot = (day: Date, hour: number) => {
+  // Open modal with pre-filled slot
+  const openModal = (day: Date, startHour: number, endHour: number) => {
     const dateStr = day.toISOString().split("T")[0];
-    const startTime = `${hour.toString().padStart(2, "0")}:00`;
-    const endHour = Math.min(hour + 1, 20);
-    const endTime = `${endHour.toString().padStart(2, "0")}:00`;
-    setForm({ clientId: "", date: dateStr, startTime, endTime, type: "PERSONAL", notes: "" });
-    setShowAdd(true);
+    const startTime = `${startHour.toString().padStart(2, "0")}:00`;
+    const endTime = `${Math.min(endHour, 20).toString().padStart(2, "0")}:00`;
+    setModal({
+      clientId: filterClientId,
+      date: dateStr,
+      startTime,
+      endTime,
+      type: "PERSONAL",
+      notes: "",
+    });
+  };
+
+  // Open blank modal (from New Booking button)
+  const openBlankModal = () => {
+    setModal({
+      clientId: filterClientId,
+      date: "",
+      startTime: "09:00",
+      endTime: "10:00",
+      type: "PERSONAL",
+      notes: "",
+    });
   };
 
   const createBooking = async () => {
-    if (!form.clientId || !form.date) return;
+    if (!modal || !modal.clientId || !modal.date) return;
     setCreating(true);
-    await fetch("/api/bookings", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(form) });
+    await fetch("/api/bookings", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(modal),
+    });
     setCreating(false);
-    setShowAdd(false);
-    setForm({ clientId: "", date: "", startTime: "09:00", endTime: "10:00", type: "PERSONAL", notes: "" });
-    toast(t("bookingCreated") || "Booking created");
+    setModal(null);
+    toast(t("bookingCreated"));
     loadBookings();
   };
 
   const cancelBooking = async (id: string) => {
     await fetch(`/api/bookings/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ status: "CANCELLED" }) });
     setBookings(bookings.map((b) => b.id === id ? { ...b, status: "CANCELLED" } : b));
-    toast(t("bookingCancelled") || "Booking cancelled", "info");
+    toast(t("bookingCancelled"), "info");
   };
 
   const deleteBooking = async (id: string) => {
     await fetch(`/api/bookings/${id}`, { method: "DELETE" });
     setBookings(bookings.filter((b) => b.id !== id));
     setDeleteConfirm(null);
-    toast(t("bookingDeleted") || "Booking deleted", "info");
+    toast(t("bookingDeleted"), "info");
   };
 
   // Auto-set end time 1h after start
   const setStartTime = (time: string) => {
+    if (!modal) return;
     const [h, m] = time.split(":").map(Number);
     const endH = Math.min(h + 1, 20);
-    setForm({ ...form, startTime: time, endTime: `${endH.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}` });
+    setModal({ ...modal, startTime: time, endTime: `${endH.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}` });
   };
 
   const hours = Array.from({ length: 14 }, (_, i) => i + 7);
@@ -119,65 +149,76 @@ export default function SchedulePage() {
     return `${d.getUTCHours().toString().padStart(2, "0")}:${d.getUTCMinutes().toString().padStart(2, "0")}`;
   };
 
+  // --- Drag handlers for desktop grid ---
+  const handleMouseDown = (dayIdx: number, hour: number) => {
+    dragging.current = true;
+    setDrag({ dayIdx, startHour: hour, endHour: hour + 1 });
+  };
+
+  const handleMouseEnter = (dayIdx: number, hour: number) => {
+    if (!dragging.current || !drag || dayIdx !== drag.dayIdx) return;
+    const newEnd = Math.max(hour + 1, drag.startHour + 1);
+    setDrag({ ...drag, endHour: newEnd });
+  };
+
+  const handleMouseUp = useCallback(() => {
+    if (!dragging.current || !drag) return;
+    dragging.current = false;
+    const startH = Math.min(drag.startHour, drag.endHour - 1);
+    const endH = Math.max(drag.startHour + 1, drag.endHour);
+    openModal(weekDays[drag.dayIdx], startH, endH);
+    setDrag(null);
+  }, [drag, weekDays, filterClientId]);
+
+  // Global mouseup listener to catch drag end outside grid
+  useEffect(() => {
+    const onUp = () => {
+      if (dragging.current && drag) {
+        dragging.current = false;
+        const startH = Math.min(drag.startHour, drag.endHour - 1);
+        const endH = Math.max(drag.startHour + 1, drag.endHour);
+        openModal(weekDays[drag.dayIdx], startH, endH);
+        setDrag(null);
+      }
+    };
+    window.addEventListener("mouseup", onUp);
+    return () => window.removeEventListener("mouseup", onUp);
+  }, [drag, weekDays, filterClientId]);
+
+  const isCellInDrag = (dayIdx: number, hour: number) => {
+    if (!drag || dayIdx !== drag.dayIdx) return false;
+    const lo = Math.min(drag.startHour, drag.endHour - 1);
+    const hi = Math.max(drag.startHour, drag.endHour - 1);
+    return hour >= lo && hour <= hi;
+  };
+
   return (
     <div>
       <div className="flex items-center justify-between mb-2">
         <h1 className="text-xl font-bold tracking-tight">{t("schedule")}</h1>
-        <button onClick={() => { setShowAdd(!showAdd); if (showAdd) setForm({ clientId: "", date: "", startTime: "09:00", endTime: "10:00", type: "PERSONAL", notes: "" }); }} className="btn-primary text-[14px]">
-          {showAdd ? t("cancel") : t("newBooking")}
+        <button onClick={openBlankModal} className="btn-primary text-[14px]">
+          {t("newBooking")}
         </button>
       </div>
-      <p className="text-[14px] text-neutral-500 mb-6 sm:mb-8">{t("scheduleSub")}</p>
+      <p className="text-[14px] text-neutral-500 mb-4 sm:mb-6">{t("scheduleSub")}</p>
 
-      {/* Booking form */}
-      {showAdd && (
-        <div className="card p-5 sm:p-6 mb-6 animate-in">
-          <h3 className="text-[15px] font-semibold text-neutral-200 mb-5">{t("newBooking")}</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-4">
-            <div>
-              <label className="label">{t("client")} *</label>
-              <select value={form.clientId} onChange={(e) => setForm({ ...form, clientId: e.target.value })} className="input-field">
-                <option value="">{t("select")}</option>
-                {clients.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-              </select>
-            </div>
-            <div>
-              <label className="label">{t("date")} *</label>
-              <input type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} className="input-field" />
-            </div>
-          </div>
-          <div className="grid grid-cols-3 gap-3 sm:gap-4 mb-4">
-            <div>
-              <label className="label">{t("start")}</label>
-              <select value={form.startTime} onChange={(e) => setStartTime(e.target.value)} className="input-field">
-                {TIME_SLOTS.map((t) => <option key={t} value={t}>{t}</option>)}
-              </select>
-            </div>
-            <div>
-              <label className="label">{t("end")}</label>
-              <select value={form.endTime} onChange={(e) => setForm({ ...form, endTime: e.target.value })} className="input-field">
-                {TIME_SLOTS.filter((t) => t > form.startTime).map((t) => <option key={t} value={t}>{t}</option>)}
-              </select>
-            </div>
-            <div>
-              <label className="label">{t("type")}</label>
-              <select value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })} className="input-field">
-                <option value="PERSONAL">{t("personal")}</option>
-                <option value="GROUP">{t("group")}</option>
-                <option value="ONLINE">{t("online")}</option>
-              </select>
-            </div>
-          </div>
-          <div className="mb-5">
-            <label className="label">{t("notes")}</label>
-            <input type="text" value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })}
-              placeholder={t("optional")} className="input-field" />
-          </div>
-          <button onClick={createBooking} disabled={!form.clientId || !form.date || creating} className="btn-primary disabled:opacity-40 text-[14px]">
-            {creating ? t("saving") || "Creating..." : t("createBooking")}
+      {/* Client filter — pre-fills bookings */}
+      <div className="flex items-center gap-3 mb-6">
+        <label className="text-[12px] text-neutral-500 shrink-0">{t("client")}:</label>
+        <select
+          value={filterClientId}
+          onChange={(e) => setFilterClientId(e.target.value)}
+          className="input-field max-w-[220px] text-[13px] py-2"
+        >
+          <option value="">{t("allClients") || "All clients"}</option>
+          {clients.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+        </select>
+        {filterClientId && (
+          <button onClick={() => setFilterClientId("")} className="text-[11px] text-neutral-600 hover:text-neutral-300 transition-colors">
+            {t("clear") || "Clear"}
           </button>
-        </div>
-      )}
+        )}
+      </div>
 
       {/* Week nav */}
       <div className="flex items-center gap-1.5 sm:gap-2 mb-6 flex-wrap">
@@ -209,7 +250,7 @@ export default function SchedulePage() {
                   <span className={`text-[14px] tabular-nums ${isToday ? "text-bordeaux-400 font-bold" : "text-neutral-300"}`}>{day.getDate()}</span>
                 </div>
                 <button
-                  onClick={() => openFormForSlot(day, 9)}
+                  onClick={() => openModal(day, 9, 10)}
                   className="text-[11px] text-neutral-600 hover:text-bordeaux-400 transition-colors px-2 py-1"
                 >+ {t("newBooking").toLowerCase()}</button>
               </div>
@@ -245,8 +286,8 @@ export default function SchedulePage() {
         })}
       </div>
 
-      {/* Desktop: Grid view */}
-      <div className="card overflow-hidden hidden sm:block">
+      {/* Desktop: Grid view with drag-to-book */}
+      <div className="card overflow-hidden hidden sm:block select-none">
         <div className="grid grid-cols-8 border-b border-[#181818]">
           <div className="p-3 text-[12px] text-neutral-600"></div>
           {weekDays.map((day, i) => {
@@ -265,10 +306,17 @@ export default function SchedulePage() {
             <div className="px-3 py-2 text-[12px] text-neutral-700 tabular-nums">{hour.toString().padStart(2, "0")}:00</div>
             {weekDays.map((day, di) => {
               const dayBookings = getBookingsForDayHour(day, hour);
+              const inDrag = isCellInDrag(di, hour);
               return (
                 <div key={di}
-                  className="px-1.5 py-1 border-l border-[#111] min-h-[48px] cursor-pointer hover:bg-[#0d0d0d] transition-colors group/cell"
-                  onClick={() => { if (dayBookings.length === 0) openFormForSlot(day, hour); }}>
+                  className={`px-1.5 py-1 border-l border-[#111] min-h-[48px] cursor-pointer transition-colors group/cell ${
+                    inDrag ? "bg-bordeaux-900/20" : "hover:bg-[#0d0d0d]"
+                  }`}
+                  onMouseDown={(e) => {
+                    if (dayBookings.length === 0) { e.preventDefault(); handleMouseDown(di, hour); }
+                  }}
+                  onMouseEnter={() => handleMouseEnter(di, hour)}
+                >
                   {dayBookings.length > 0 ? dayBookings.map((b) => (
                     <div key={b.id} className={`text-[11px] rounded-xl px-2 py-1.5 border mb-1 ${statusColor[b.status] || statusColor.CONFIRMED}`}>
                       <div className="font-medium">{b.client?.name || "Unknown"}</div>
@@ -280,7 +328,11 @@ export default function SchedulePage() {
                         <button onClick={(e) => { e.stopPropagation(); setDeleteConfirm(b.id); }} className="text-[9px] opacity-30 hover:opacity-80 text-red-400 underline transition-opacity">{t("delete").toLowerCase()}</button>
                       </div>
                     </div>
-                  )) : (
+                  )) : inDrag ? (
+                    <div className="w-full h-full flex items-center justify-center">
+                      <div className="w-full h-full rounded-lg border border-dashed border-bordeaux-700/40 bg-bordeaux-900/10" />
+                    </div>
+                  ) : (
                     <div className="w-full h-full flex items-center justify-center opacity-0 group-hover/cell:opacity-100 transition-opacity">
                       <span className="text-[10px] text-neutral-700">+</span>
                     </div>
@@ -292,10 +344,72 @@ export default function SchedulePage() {
         ))}
       </div>
 
+      {/* Booking Modal */}
+      {modal && (
+        <div className="fixed inset-0 z-[150] flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setModal(null)}>
+          <div className="bg-[#121212] border border-[#1e1e1e] rounded-t-2xl sm:rounded-2xl w-full sm:max-w-md sm:mx-4 p-6 shadow-2xl animate-in" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-[15px] font-semibold text-neutral-100 mb-5">{t("newBooking")}</h3>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+              <div>
+                <label className="label">{t("client")} *</label>
+                <select value={modal.clientId} onChange={(e) => setModal({ ...modal, clientId: e.target.value })} className="input-field">
+                  <option value="">{t("select")}</option>
+                  {clients.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="label">{t("date")} *</label>
+                <input type="date" value={modal.date} onChange={(e) => setModal({ ...modal, date: e.target.value })} className="input-field" />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-3 gap-3 mb-4">
+              <div>
+                <label className="label">{t("start")}</label>
+                <select value={modal.startTime} onChange={(e) => setStartTime(e.target.value)} className="input-field">
+                  {TIME_SLOTS.map((slot) => <option key={slot} value={slot}>{slot}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="label">{t("end")}</label>
+                <select value={modal.endTime} onChange={(e) => setModal({ ...modal, endTime: e.target.value })} className="input-field">
+                  {TIME_SLOTS.filter((slot) => slot > modal.startTime).map((slot) => <option key={slot} value={slot}>{slot}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="label">{t("type")}</label>
+                <select value={modal.type} onChange={(e) => setModal({ ...modal, type: e.target.value })} className="input-field">
+                  <option value="PERSONAL">{t("personal")}</option>
+                  <option value="GROUP">{t("group")}</option>
+                  <option value="ONLINE">{t("online")}</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="mb-5">
+              <label className="label">{t("notes")}</label>
+              <input type="text" value={modal.notes} onChange={(e) => setModal({ ...modal, notes: e.target.value })}
+                placeholder={t("optional")} className="input-field" />
+            </div>
+
+            <div className="flex gap-2">
+              <button onClick={() => setModal(null)} className="flex-1 btn-ghost text-[13px] py-2.5 text-center">
+                {t("cancel")}
+              </button>
+              <button onClick={createBooking} disabled={!modal.clientId || !modal.date || creating}
+                className="flex-1 btn-primary disabled:opacity-40 text-[13px] py-2.5">
+                {creating ? t("saving") : t("createBooking")}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {deleteConfirm && (
         <ConfirmModal
-          title={t("deleteBooking") || "Delete booking"}
-          message={t("deleteBookingMsg") || "Are you sure you want to delete this booking?"}
+          title={t("deleteBooking")}
+          message={t("deleteBookingMsg")}
           confirmLabel={t("delete")}
           cancelLabel={t("cancel")}
           destructive

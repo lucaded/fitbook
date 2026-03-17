@@ -128,6 +128,8 @@ const translations = {
     deleteBookingMsg: "Are you sure you want to delete this booking?",
     today: "Today",
     yesterday: "Yesterday",
+    allClients: "All clients",
+    clear: "Clear",
 
     // Login
     personalTrainingMgmt: "Personal training management",
@@ -257,6 +259,8 @@ const translations = {
     deleteBookingMsg: "Sei sicuro di voler eliminare questa prenotazione?",
     today: "Oggi",
     yesterday: "Ieri",
+    allClients: "Tutti i clienti",
+    clear: "Cancella",
 
     // Login
     personalTrainingMgmt: "Gestione allenamento personale",
