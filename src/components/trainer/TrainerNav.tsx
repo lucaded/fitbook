@@ -13,6 +13,7 @@ export function TrainerNav() {
   const { data: session } = useSession();
   const { locale, setLocale, t } = useI18n();
   const [showGuide, setShowGuide] = useState(false);
+  const [showMobileMenu, setShowMobileMenu] = useState(false);
 
   // Show guide on first visit
   useEffect(() => {
@@ -38,7 +39,8 @@ export function TrainerNav() {
           <div className="flex justify-between h-14 items-center">
             <div className="flex items-center gap-4 sm:gap-10">
               <Link href="/trainer" className="flex items-center shrink-0">
-                <Image src="/icons/fitbook-logo-dark.svg" alt="FitBook" width={120} height={24} className="h-6 w-auto" priority />
+                <Image src="/icons/fitbook-mark.svg" alt="FitBook" width={28} height={28} className="h-7 w-7 sm:hidden" priority />
+                <Image src="/icons/fitbook-logo-dark.svg" alt="FitBook" width={120} height={24} className="h-6 w-auto hidden sm:block" priority />
               </Link>
               <div className="flex items-center gap-0.5 sm:gap-1">
                 {links.map((link) => {
@@ -62,18 +64,18 @@ export function TrainerNav() {
               </div>
             </div>
 
-            <div className="flex items-center gap-2 sm:gap-3">
-              {/* Guide button */}
+            <div className="flex items-center gap-1.5 sm:gap-3">
+              {/* Guide button — hidden on mobile */}
               <button
                 onClick={() => setShowGuide(true)}
-                className="text-[13px] text-neutral-600 hover:text-neutral-300 px-2.5 py-1 rounded-full hover:bg-[#161616] transition-all duration-200"
+                className="hidden sm:block text-[13px] text-neutral-600 hover:text-neutral-300 px-2.5 py-1 rounded-full hover:bg-[#161616] transition-all duration-200"
                 title={locale === "it" ? "Guida" : "Guide"}
               >
                 ?
               </button>
 
-              {/* Language toggle */}
-              <div className="flex bg-[#111] rounded-full p-0.5 border border-[#1c1c1c]">
+              {/* Language toggle — hidden on mobile */}
+              <div className="hidden sm:flex bg-[#111] rounded-full p-0.5 border border-[#1c1c1c]">
                 <button
                   onClick={() => setLocale("en")}
                   className={`text-[12px] rounded-full px-2.5 py-0.5 transition-all duration-200 ${locale === "en" ? "bg-[#1e1e1e] text-neutral-200" : "text-neutral-600 hover:text-neutral-400"}`}
@@ -91,7 +93,12 @@ export function TrainerNav() {
               {session && (
                 <>
                   {session.user?.image && (
-                    <img src={session.user.image} alt="" className="w-7 h-7 rounded-full ring-2 ring-[#1e1e1e]" />
+                    <button onClick={() => setShowMobileMenu(!showMobileMenu)} className="sm:hidden">
+                      <img src={session.user.image} alt="" className="w-7 h-7 rounded-full ring-2 ring-[#1e1e1e]" />
+                    </button>
+                  )}
+                  {session.user?.image && (
+                    <img src={session.user.image} alt="" className="w-7 h-7 rounded-full ring-2 ring-[#1e1e1e] hidden sm:block" />
                   )}
                   <span className="text-[14px] text-neutral-500 hidden sm:inline">{session.user?.name}</span>
                   <button
@@ -105,6 +112,35 @@ export function TrainerNav() {
             </div>
           </div>
         </div>
+        {/* Mobile menu dropdown */}
+        {showMobileMenu && (
+          <div className="sm:hidden border-t border-[#181818] px-4 py-3 space-y-3 animate-in">
+            <div className="flex items-center justify-between">
+              <span className="text-[13px] text-neutral-500">{session?.user?.name}</span>
+              <div className="flex bg-[#111] rounded-full p-0.5 border border-[#1c1c1c]">
+                <button
+                  onClick={() => setLocale("en")}
+                  className={`text-[12px] rounded-full px-2.5 py-0.5 transition-all duration-200 ${locale === "en" ? "bg-[#1e1e1e] text-neutral-200" : "text-neutral-600"}`}
+                >EN</button>
+                <button
+                  onClick={() => setLocale("it")}
+                  className={`text-[12px] rounded-full px-2.5 py-0.5 transition-all duration-200 ${locale === "it" ? "bg-[#1e1e1e] text-neutral-200" : "text-neutral-600"}`}
+                >IT</button>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <button onClick={() => { setShowMobileMenu(false); setShowGuide(true); }}
+                className="text-[13px] text-neutral-500 hover:text-neutral-300 transition-colors">
+                {locale === "it" ? "Guida" : "Guide"}
+              </button>
+              <span className="text-neutral-800">·</span>
+              <button onClick={() => signOut({ callbackUrl: "/login" })}
+                className="text-[13px] text-neutral-500 hover:text-neutral-300 transition-colors">
+                {t("signOut")}
+              </button>
+            </div>
+          </div>
+        )}
       </nav>
 
       {showGuide && <Guide onClose={closeGuide} />}
