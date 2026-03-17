@@ -34,7 +34,7 @@ export default function ProgramEditorPage() {
   const [program, setProgram] = useState<Program | null>(null);
   const [loading, setLoading] = useState(true);
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
-  const [activeCell, setActiveCell] = useState<{ week: number; day: number } | null>(null);
+  const [activeCell, setActiveCell] = useState<{ week: number; day: number; exercise?: number } | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [showSearch, setShowSearch] = useState(false);
   const [showRPETable, setShowRPETable] = useState(false);
@@ -380,26 +380,28 @@ export default function ProgramEditorPage() {
                   </div>
                 </div>
                 {week.days.map((day, dIdx) => {
-                  const isActive = activeCell?.week === wIdx && activeCell?.day === dIdx;
+                  const isDayActive = activeCell?.week === wIdx && activeCell?.day === dIdx;
                   const dayComplete = day.exercises.length > 0 && day.exercises.every((e) => e.actualSets !== null);
                   const dayLabel = program.weeks[0]?.days[dIdx]?.label || `Day ${dIdx + 1}`;
                   return (
                     <div key={day.id}
-                      className={`px-4 py-3 border-b border-[#111] last:border-b-0 ${isActive ? "bg-[#0f0f0f]" : ""} ${dayComplete ? "bg-emerald-950/5" : ""}`}
-                      onClick={() => { setActiveCell(isActive ? null : { week: wIdx, day: dIdx }); setShowSearch(false); setSearchQuery(""); }}>
-                      <div className="flex items-center justify-between mb-2">
+                      className={`px-4 py-3 border-b border-[#111] last:border-b-0 ${isDayActive ? "bg-[#0f0f0f]" : ""} ${dayComplete ? "bg-emerald-950/5" : ""}`}>
+                      <div className="flex items-center justify-between mb-2 cursor-pointer"
+                        onClick={() => { setActiveCell(isDayActive ? null : { week: wIdx, day: dIdx }); setShowSearch(false); setSearchQuery(""); }}>
                         <p className="text-[12px] text-neutral-500 font-medium">{dayLabel}</p>
-                        <span className={`text-[11px] transition-transform ${isActive ? "rotate-180" : ""}`}>▾</span>
+                        <span className={`text-[11px] transition-transform ${isDayActive ? "rotate-180" : ""}`}>▾</span>
                       </div>
                       <div className="space-y-1.5">
                         {day.exercises.map((ex, eIdx) => {
                           const oneRM = program.oneRMs[ex.exerciseId] || 0;
                           const suggestion = getSuggestion(wIdx, dIdx, ex.exerciseId);
                           const hasActuals = ex.actualSets !== null;
+                          const isExActive = activeCell?.week === wIdx && activeCell?.day === dIdx && activeCell?.exercise === eIdx;
                           return (
-                            <div key={ex.id} className={`rounded-xl px-3 py-2.5 transition-all duration-200 ${
+                            <div key={ex.id} className={`rounded-xl px-3 py-2.5 transition-all duration-200 cursor-pointer ${
                               hasActuals ? "bg-emerald-500/[0.04] border border-emerald-500/10" : "bg-[#111] border border-[#181818]"
-                            }`}>
+                            } ${isExActive ? "ring-1 ring-bordeaux-700/30" : ""}`}
+                              onClick={(e) => { e.stopPropagation(); setActiveCell(isExActive ? { week: wIdx, day: dIdx } : { week: wIdx, day: dIdx, exercise: eIdx }); }}>
                               <div className="flex items-start justify-between gap-2">
                                 <div className="min-w-0">
                                   <span className="text-[14px] font-semibold text-white block">{ex.exerciseName}</span>
@@ -414,7 +416,7 @@ export default function ProgramEditorPage() {
                                   {t("apply")}: {suggestion.sets} × {suggestion.reps} · {suggestion.loadKg} kg
                                 </button>
                               )}
-                              {isActive && (
+                              {isExActive && (
                                 <div className="mt-3" onClick={(e) => e.stopPropagation()}>
                                   <div className="grid grid-cols-4 gap-1.5 text-[12px]">
                                     {[
@@ -476,7 +478,7 @@ export default function ProgramEditorPage() {
                         })}
                       </div>
                       {/* Add exercise / search */}
-                      {isActive && (
+                      {isDayActive && (
                         <div className="mt-2.5 space-y-1.5" onClick={(e) => e.stopPropagation()}>
                           {!showSearch ? (
                             <div className="flex gap-2">
@@ -523,7 +525,7 @@ export default function ProgramEditorPage() {
                           )}
                         </div>
                       )}
-                      {day.exercises.length === 0 && !isActive && (
+                      {day.exercises.length === 0 && !isDayActive && (
                         <div className="text-[12px] text-neutral-700 py-4 text-center border border-dashed border-[#181818] rounded-xl">
                           {t("clickToAdd")}
                         </div>
