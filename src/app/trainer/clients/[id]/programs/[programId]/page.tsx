@@ -46,6 +46,7 @@ export default function ProgramEditorPage() {
   const [editingLabel, setEditingLabel] = useState<{ dayId: string; value: string } | null>(null);
   const [editingNote, setEditingNote] = useState<{ dayId: string; value: string } | null>(null);
   const saveTimer = useRef<NodeJS.Timeout>(undefined);
+  const hasScrolled = useRef(false);
 
   const loadProgram = useCallback(() => {
     fetch(`/api/programs/${params.programId}`)
@@ -55,6 +56,28 @@ export default function ProgramEditorPage() {
   }, [params.programId]);
 
   useEffect(() => { loadProgram(); }, [loadProgram]);
+
+  // Auto-scroll to the current working week on first load
+  useEffect(() => {
+    if (!program || hasScrolled.current) return;
+    hasScrolled.current = true;
+    // Find last week with any actuals, or last week with any exercises
+    let targetIdx = -1;
+    for (let i = program.weeks.length - 1; i >= 0; i--) {
+      if (program.weeks[i].days.some((d) => d.exercises.some((e) => e.actualSets !== null))) { targetIdx = i; break; }
+    }
+    if (targetIdx === -1) {
+      for (let i = program.weeks.length - 1; i >= 0; i--) {
+        if (program.weeks[i].days.some((d) => d.exercises.length > 0)) { targetIdx = i; break; }
+      }
+    }
+    if (targetIdx > 0) {
+      setTimeout(() => {
+        const el = document.getElementById(`week-${targetIdx}`);
+        if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 100);
+    }
+  }, [program]);
 
   const markSaving = () => { setSaveStatus("saving"); if (saveTimer.current) clearTimeout(saveTimer.current); };
   const markSaved = () => { setSaveStatus("saved"); saveTimer.current = setTimeout(() => setSaveStatus("idle"), 2000); };
@@ -292,6 +315,20 @@ export default function ProgramEditorPage() {
           <p className="text-[13px] text-neutral-600 mt-1 tabular-nums">
             {program.weeks.length} {t("weeks").toLowerCase()}  ·  {program.daysPerWeek} {t("daysPerWeek").toLowerCase()}  ·  +{program.progressionIncrement} kg
           </p>
+          {(() => {
+            const allEx = program.weeks.flatMap(w => w.days.flatMap(d => d.exercises));
+            const total = allEx.length;
+            const done = allEx.filter(e => e.actualSets != null).length;
+            const pct = total > 0 ? Math.round((done / total) * 100) : 0;
+            return total > 0 ? (
+              <div className="mt-2 flex items-center gap-2.5 print:hidden">
+                <div className="w-32 h-1.5 rounded-full bg-[#1a1a1a] overflow-hidden">
+                  <div className="h-full rounded-full bg-emerald-500 transition-all duration-500" style={{ width: `${pct}%` }} />
+                </div>
+                <span className="text-[12px] text-neutral-500 tabular-nums">{pct}% {t("complete").toLowerCase()}</span>
+              </div>
+            ) : null;
+          })()}
         </div>
         <div className="flex items-center gap-1.5 print:hidden flex-wrap">
           <button onClick={addDay} className="text-[13px] font-medium text-bordeaux-400 hover:text-bordeaux-300 bg-bordeaux-500/[0.08] hover:bg-bordeaux-500/[0.14] px-3.5 py-1.5 rounded-full transition-all duration-200">{t("addDay")}</button>
@@ -422,7 +459,7 @@ export default function ProgramEditorPage() {
           {program.weeks.map((week, wIdx) => {
             const hasExercises = week.days.some((d) => d.exercises.length > 0);
             return (
-              <div key={week.id} className="card overflow-hidden">
+              <div key={week.id} id={`week-${wIdx}`} className="card overflow-hidden">
                 <div className="flex items-center justify-between px-4 py-3 border-b border-[#181818] bg-[#0e0e0e]">
                   <span className="text-[14px] font-medium text-neutral-400 tabular-nums">W{week.weekNumber}</span>
                   <div className="flex gap-2">
@@ -682,7 +719,7 @@ export default function ProgramEditorPage() {
               {program.weeks.map((week, wIdx) => {
                 const hasExercises = week.days.some((d) => d.exercises.length > 0);
                 return (
-                  <tr key={week.id} className="border-t border-[#141414] align-top print:break-inside-avoid">
+                  <tr key={week.id} id={`week-${wIdx}`} className="border-t border-[#141414] align-top print:break-inside-avoid">
                     <td className="text-[14px] tabular-nums text-neutral-600 p-2.5 sticky left-0 bg-[#0a0a0a] z-10 print:bg-white font-medium">
                       <div>W{week.weekNumber}</div>
                       <div className="mt-1.5 space-y-1 print:hidden">

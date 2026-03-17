@@ -13,12 +13,20 @@ interface ClientSummary {
   _count: { programs: number; bookings: number };
 }
 
+interface WeeklyPulse {
+  sessionsBooked: number;
+  sessionsCompleted: number;
+  programsActive: number;
+  exercisesLogged: number;
+}
+
 export default function TrainerDashboard() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const { t } = useI18n();
   const [clients, setClients] = useState<ClientSummary[]>([]);
   const [loading, setLoading] = useState(true);
+  const [pulse, setPulse] = useState<WeeklyPulse | null>(null);
 
   useEffect(() => {
     if (status === "unauthenticated") router.push("/login");
@@ -29,6 +37,10 @@ export default function TrainerDashboard() {
       .then((r) => r.json())
       .then((data) => { setClients(data); setLoading(false); })
       .catch(() => setLoading(false));
+    fetch("/api/trainer/weekly-pulse")
+      .then((r) => r.json())
+      .then((data) => { if (!data.error) setPulse(data); })
+      .catch(() => {});
   }, []);
 
   const activeClients = clients.filter((c) => c.active);
@@ -52,6 +64,47 @@ export default function TrainerDashboard() {
         <h1 className="text-xl font-bold tracking-tight">{t("dashboard")}</h1>
         <p className="text-[14px] text-neutral-500 mt-1">{t("dashboardSub")}</p>
       </div>
+
+      {/* Weekly Pulse */}
+      {pulse && (
+        <div className="bg-[#111] border border-[#181818] rounded-2xl px-5 py-4 mb-6">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-[14px] font-semibold text-neutral-200">{t("weeklyPulse")}</h2>
+            <span className="text-[12px] text-neutral-600">{(() => {
+              const now = new Date();
+              const day = now.getDay();
+              const diffToMonday = day === 0 ? -6 : 1 - day;
+              const mon = new Date(now); mon.setDate(now.getDate() + diffToMonday);
+              const sun = new Date(mon); sun.setDate(mon.getDate() + 6);
+              const fmt = (d: Date) => d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+              return `${fmt(mon)}\u2013${fmt(sun)}`;
+            })()}</span>
+          </div>
+          <div className="grid grid-cols-3 gap-4">
+            <div>
+              <p className="text-xl font-bold text-neutral-100 tabular-nums">
+                {pulse.sessionsCompleted}<span className="text-neutral-600 text-[14px] font-normal">/{pulse.sessionsBooked}</span>
+              </p>
+              <p className="text-[11px] text-neutral-500 mt-0.5">{t("sessionsCompleted")}</p>
+            </div>
+            <div>
+              <p className="text-xl font-bold text-neutral-100 tabular-nums">{pulse.programsActive}</p>
+              <p className="text-[11px] text-neutral-500 mt-0.5">{t("programsActive")}</p>
+            </div>
+            <div>
+              <p className="text-xl font-bold text-neutral-100 tabular-nums">{pulse.exercisesLogged}</p>
+              <p className="text-[11px] text-neutral-500 mt-0.5">{t("exercisesLogged")}</p>
+            </div>
+          </div>
+          <p className="text-[12px] text-neutral-600 mt-3 italic">
+            {pulse.sessionsBooked === 0
+              ? t("pulseStart")
+              : pulse.sessionsCompleted / pulse.sessionsBooked >= 0.75
+                ? t("pulseGreat")
+                : t("pulseGood")}
+          </p>
+        </div>
+      )}
 
       {/* Stats */}
       <div className="grid grid-cols-3 gap-2 sm:gap-4 mb-10">

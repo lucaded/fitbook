@@ -7,6 +7,34 @@ import { useI18n } from "@/lib/i18n";
 import { useToast } from "@/components/Toast";
 import { ConfirmModal } from "@/components/ConfirmModal";
 
+interface ProgramExercise {
+  id: string;
+  actualSets: number | null;
+  actualReps: number | null;
+  actualLoadKg: number | null;
+}
+
+interface ProgramDay {
+  id: string;
+  dayNumber: number;
+  exercises: ProgramExercise[];
+}
+
+interface ProgramWeek {
+  id: string;
+  weekNumber: number;
+  days: ProgramDay[];
+}
+
+interface Program {
+  id: string;
+  name: string;
+  daysPerWeek: number;
+  status: string;
+  createdAt: string;
+  weeks: ProgramWeek[];
+}
+
 interface ClientDetail {
   id: string;
   name: string;
@@ -18,13 +46,7 @@ interface ClientDetail {
   injuries: string | null;
   notes: string | null;
   active: boolean;
-  programs: {
-    id: string;
-    name: string;
-    daysPerWeek: number;
-    status: string;
-    createdAt: string;
-  }[];
+  programs: Program[];
   prs: {
     id: string;
     exerciseName: string;
@@ -38,6 +60,67 @@ interface ClientDetail {
     status: string;
     type: string;
   }[];
+}
+
+function computeConsistency(program: Program): { weekCompleted: boolean[]; streak: number } {
+  const weekCompleted = program.weeks
+    .sort((a, b) => a.weekNumber - b.weekNumber)
+    .map((week) =>
+      week.days.some((day) =>
+        day.exercises.some((ex) => ex.actualSets != null)
+      )
+    );
+
+  // Count streak backwards from last completed week
+  let streak = 0;
+  for (let i = weekCompleted.length - 1; i >= 0; i--) {
+    if (weekCompleted[i]) {
+      streak++;
+    } else {
+      // Only break if there's a completed week after this gap
+      if (streak > 0) break;
+    }
+  }
+
+  return { weekCompleted, streak };
+}
+
+function ConsistencyIndicator({ program }: { program: Program }) {
+  const { t } = useI18n();
+  const { weekCompleted, streak } = computeConsistency(program);
+
+  if (program.weeks.length === 0) return null;
+
+  const completedCount = weekCompleted.filter(Boolean).length;
+  if (completedCount === 0) return null;
+
+  return (
+    <div className="mt-3">
+      <div className="flex items-center gap-3 mb-2">
+        {streak > 0 && (
+          <span className="text-[12px] text-emerald-400 font-medium">
+            {streak} {streak === 1 ? t("weekStreak") : t("weeksStreak")}
+          </span>
+        )}
+        <span className="text-[11px] text-neutral-600">
+          {completedCount}/{weekCompleted.length} {t("weeksCompleted")}
+        </span>
+      </div>
+      <div className="flex gap-[3px] flex-wrap">
+        {weekCompleted.map((completed, i) => (
+          <div
+            key={i}
+            title={`${t("week")} ${i + 1}`}
+            className={`w-3 h-3 rounded-[3px] transition-colors ${
+              completed
+                ? "bg-emerald-500/70"
+                : "bg-neutral-800 border border-neutral-700/50"
+            }`}
+          />
+        ))}
+      </div>
+    </div>
+  );
 }
 
 export default function ClientDetailPage() {
@@ -347,6 +430,21 @@ export default function ClientDetailPage() {
                       </svg>
                     </div>
                   </div>
+                  {(() => {
+                    const allEx = prog.weeks.flatMap(w => w.days.flatMap(d => d.exercises));
+                    const total = allEx.length;
+                    const done = allEx.filter(e => e.actualSets != null).length;
+                    const pct = total > 0 ? Math.round((done / total) * 100) : 0;
+                    return total > 0 ? (
+                      <div className="mt-2.5 flex items-center gap-2.5">
+                        <div className="flex-1 h-1 rounded-full bg-[#1a1a1a] overflow-hidden">
+                          <div className="h-full rounded-full bg-emerald-500/70 transition-all duration-500" style={{ width: `${pct}%` }} />
+                        </div>
+                        <span className="text-[11px] text-neutral-600 tabular-nums shrink-0">{pct}%</span>
+                      </div>
+                    ) : null;
+                  })()}
+                  <ConsistencyIndicator program={prog} />
                 </Link>
               ))}
             </div>

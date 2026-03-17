@@ -98,6 +98,7 @@ const translations = {
     programNotFound: "Program not found",
     duplicate: "Duplicate",
     duplicating: "Duplicating...",
+    completion: "completion",
 
     // Schedule
     scheduleSub: "Weekly calendar for training sessions.",
@@ -128,12 +129,26 @@ const translations = {
     deleteClient: "Delete client",
     deleteClientMsg: "Are you sure? This will delete all programs and bookings for this client.",
     createFirstProgram: "Create a training program to get started",
+    weekStreak: "week streak",
+    weeksStreak: "week streak",
+    weeksCompleted: "weeks completed",
+    week: "Week",
     deleteBooking: "Delete booking",
     deleteBookingMsg: "Are you sure you want to delete this booking?",
     today: "Today",
     yesterday: "Yesterday",
     allClients: "All clients",
     clear: "Clear",
+
+    // Weekly Pulse
+    weeklyPulse: "This Week",
+    sessionsCompleted: "Sessions Done",
+    sessionsBooked: "Booked",
+    programsActive: "Active Programs",
+    exercisesLogged: "Exercises Logged",
+    pulseGreat: "Great week — keep it up!",
+    pulseGood: "Solid progress this week.",
+    pulseStart: "Let's get this week going!",
 
     // Login
     personalTrainingMgmt: "Personal training management",
@@ -233,6 +248,7 @@ const translations = {
     programNotFound: "Programma non trovato",
     duplicate: "Duplica",
     duplicating: "Duplicazione...",
+    completion: "completamento",
 
     // Schedule
     scheduleSub: "Calendario settimanale per le sessioni di allenamento.",
@@ -263,12 +279,26 @@ const translations = {
     deleteClient: "Elimina cliente",
     deleteClientMsg: "Sei sicuro? Questo eliminerà tutti i programmi e le prenotazioni di questo cliente.",
     createFirstProgram: "Crea un programma di allenamento per iniziare",
+    weekStreak: "settimana consecutiva",
+    weeksStreak: "settimane consecutive",
+    weeksCompleted: "settimane completate",
+    week: "Settimana",
     deleteBooking: "Elimina prenotazione",
     deleteBookingMsg: "Sei sicuro di voler eliminare questa prenotazione?",
     today: "Oggi",
     yesterday: "Ieri",
     allClients: "Tutti i clienti",
     clear: "Cancella",
+
+    // Weekly Pulse
+    weeklyPulse: "Questa Settimana",
+    sessionsCompleted: "Sessioni Fatte",
+    sessionsBooked: "Prenotate",
+    programsActive: "Programmi Attivi",
+    exercisesLogged: "Esercizi Registrati",
+    pulseGreat: "Ottima settimana — continua cos\u00ec!",
+    pulseGood: "Buoni progressi questa settimana.",
+    pulseStart: "Iniziamo questa settimana!",
 
     // Login
     personalTrainingMgmt: "Gestione allenamento personale",

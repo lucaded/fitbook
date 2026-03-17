@@ -119,7 +119,7 @@ export function Guide({ onClose }: { onClose: () => void }) {
     {
       title: "Editor Programma — Vista Tabella",
       page: "Programmi / [nome]",
-      content: "Il cuore dell'app. La tabella mostra Settimane (righe) × Giorni (colonne). Clicca su una cella per attivarla, poi aggiungi esercizi dalla libreria. Ogni esercizio mostra: serie × ripetizioni · carico · RPE. Clicca su una cella attiva per modificare i valori.",
+      content: "Il cuore dell'app. La tabella mostra Settimane (righe) × Giorni (colonne). Clicca su un singolo esercizio per espandere solo i suoi campi di modifica. Il pulsante \"Aggiungi esercizio\" è sempre visibile in fondo a ogni giorno. Trascina la maniglia ⠿ per riordinare gli esercizi all'interno di un giorno.",
       visual: (
         <div className="space-y-2">
           <div className="flex items-center gap-2 mb-1">
@@ -192,7 +192,7 @@ export function Guide({ onClose }: { onClose: () => void }) {
     {
       title: "Funzioni Avanzate",
       page: "Programmi / [nome]",
-      content: "Copia Settimana: copia tutti gli esercizi a un'altra settimana. Completa Giorno: salva gli effettivi e genera automaticamente la settimana successiva con progressione (+2.5kg). 1RM: imposta il massimale per calcoli automatici %1RM ↔ kg. Tabella RPE: personalizza la tabella RPE per ogni atleta.",
+      content: "Copia Settimana: copia tutti gli esercizi a un'altra settimana. Completa Giorno: salva gli effettivi e genera automaticamente la settimana successiva con progressione (+2.5kg). 1RM: imposta il massimale per calcoli automatici %1RM ↔ kg. Tabella RPE: personalizza la tabella RPE per ogni atleta. Duplica Programma: crea una copia completa del programma con tutte le settimane/giorni/esercizi. Note Giorno: aggiungi note a qualsiasi giorno (es. \"Focus sulla forma\", \"Scarico\"). Rimuovi Giorno: clicca × sull'intestazione di qualsiasi giorno per rimuoverlo. Auto-scroll: l'editor scorre automaticamente alla settimana di lavoro corrente.",
       visual: (
         <div className="space-y-2.5">
           {[
@@ -200,12 +200,54 @@ export function Guide({ onClose }: { onClose: () => void }) {
             { label: "Completa", desc: "Salva effettivi + genera progressione", color: "text-emerald-400" },
             { label: "Valori 1RM", desc: "Imposta massimali per calcolo automatico %", color: "text-neutral-400" },
             { label: "Tabella RPE", desc: "RPE × Ripetizioni = %1RM personalizzabile", color: "text-neutral-400" },
+            { label: "Duplica Programma", desc: "Copia completa con settimane/giorni/esercizi", color: "text-bordeaux-400" },
+            { label: "Note Giorno", desc: "Aggiungi note come \"Focus forma\" o \"Scarico\"", color: "text-neutral-400" },
+            { label: "Rimuovi Giorno", desc: "Clicca × sull'intestazione di qualsiasi giorno", color: "text-neutral-400" },
+            { label: "Auto-scroll", desc: "Scorre alla settimana di lavoro corrente", color: "text-neutral-400" },
           ].map((f) => (
             <div key={f.label} className="flex items-center gap-3">
               <div className={`text-[11px] font-medium ${f.color} w-28 shrink-0`}>{f.label}</div>
               <div className="text-[10px] text-neutral-600">{f.desc}</div>
             </div>
           ))}
+        </div>
+      ),
+    },
+    {
+      title: "Monitoraggio Progressi",
+      page: "Dashboard / Clienti",
+      content: "La dashboard mostra un impulso settimanale con sessioni e statistiche esercizi. Ogni programma ha una barra di completamento. Le pagine cliente mostrano serie di costanza e una heatmap settimana per settimana.",
+      visual: (
+        <div className="space-y-3">
+          <div className="bg-[#121212] border border-[#1c1c1c] rounded-2xl p-3 space-y-2">
+            <div className="flex items-center justify-between">
+              <div className="text-[10px] text-neutral-500 uppercase tracking-wider font-semibold">Completamento Programma</div>
+              <div className="text-[11px] text-neutral-300 tabular-nums">68%</div>
+            </div>
+            <div className="w-full h-2 bg-[#1c1c1c] rounded-full overflow-hidden">
+              <div className="h-full bg-bordeaux-600 rounded-full" style={{ width: "68%" }} />
+            </div>
+          </div>
+          <div className="bg-[#121212] border border-[#1c1c1c] rounded-2xl p-3 space-y-2">
+            <div className="text-[10px] text-neutral-500 uppercase tracking-wider font-semibold">Heatmap Settimanale</div>
+            <div className="flex gap-1">
+              {[0.9, 0.7, 1, 0.3, 0.8, 0, 0.6, 1, 0.5, 0.9, 0.2, 0.7].map((v, i) => (
+                <div
+                  key={i}
+                  className="w-4 h-4 rounded-sm"
+                  style={{ backgroundColor: v === 0 ? "#1c1c1c" : `rgba(127, 29, 29, ${0.3 + v * 0.7})` }}
+                />
+              ))}
+            </div>
+            <div className="flex items-center justify-between text-[9px] text-neutral-700">
+              <span>12 settimane fa</span>
+              <span>Oggi</span>
+            </div>
+          </div>
+          <div className="text-[10px] text-neutral-600 flex items-center gap-1.5">
+            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
+            Monitora costanza e progressi nel tempo
+          </div>
         </div>
       ),
     },
@@ -335,7 +377,7 @@ export function Guide({ onClose }: { onClose: () => void }) {
     {
       title: "Program Editor — Table View",
       page: "Programs / [name]",
-      content: "The core of the app. The table shows Weeks (rows) × Days (columns). Click a cell to activate it, then add exercises from the library. Each exercise shows: sets × reps · load · RPE. Click an active cell to edit values.",
+      content: "The core of the app. The table shows Weeks (rows) × Days (columns). Click an individual exercise to expand just that exercise's edit fields. The \"Add exercise\" button is always visible at the bottom of each day. Drag the ⠿ handle to reorder exercises within a day.",
       visual: (
         <div className="space-y-2">
           <div className="flex items-center gap-2 mb-1">
@@ -408,7 +450,7 @@ export function Guide({ onClose }: { onClose: () => void }) {
     {
       title: "Advanced Features",
       page: "Programs / [name]",
-      content: "Copy Week: duplicate all exercises to another week. Complete Day: saves actuals and auto-generates next week's exercises with progression (+2.5kg). 1RM: set maxes for automatic %1RM ↔ kg conversion. RPE Table: customize the RPE chart per athlete.",
+      content: "Copy Week: duplicate all exercises to another week. Complete Day: saves actuals and auto-generates next week's exercises with progression (+2.5kg). 1RM: set maxes for automatic %1RM ↔ kg conversion. RPE Table: customize the RPE chart per athlete. Duplicate Program: creates a full copy of the program with all weeks/days/exercises. Day Notes: add notes to any day (e.g. \"Focus on form\", \"Deload\"). Remove Any Day: click × on any day header to remove it. Auto-scroll: program editor automatically scrolls to your current working week.",
       visual: (
         <div className="space-y-2.5">
           {[
@@ -416,12 +458,54 @@ export function Guide({ onClose }: { onClose: () => void }) {
             { label: "Complete", desc: "Saves actuals + generates progression", color: "text-emerald-400" },
             { label: "1RM Values", desc: "Set maxes for automatic % calculation", color: "text-neutral-400" },
             { label: "RPE Table", desc: "RPE × Reps = %1RM customizable chart", color: "text-neutral-400" },
+            { label: "Duplicate Program", desc: "Full copy with all weeks/days/exercises", color: "text-bordeaux-400" },
+            { label: "Day Notes", desc: "Add notes like \"Focus on form\" or \"Deload\"", color: "text-neutral-400" },
+            { label: "Remove Any Day", desc: "Click × on any day header to remove it", color: "text-neutral-400" },
+            { label: "Auto-scroll", desc: "Scrolls to your current working week", color: "text-neutral-400" },
           ].map((f) => (
             <div key={f.label} className="flex items-center gap-3">
               <div className={`text-[11px] font-medium ${f.color} w-28 shrink-0`}>{f.label}</div>
               <div className="text-[10px] text-neutral-600">{f.desc}</div>
             </div>
           ))}
+        </div>
+      ),
+    },
+    {
+      title: "Progress Tracking",
+      page: "Dashboard / Clients",
+      content: "The dashboard shows a weekly pulse with sessions and exercise stats. Each program has a completion progress bar. Client pages show consistency streaks and a week-by-week heatmap.",
+      visual: (
+        <div className="space-y-3">
+          <div className="bg-[#121212] border border-[#1c1c1c] rounded-2xl p-3 space-y-2">
+            <div className="flex items-center justify-between">
+              <div className="text-[10px] text-neutral-500 uppercase tracking-wider font-semibold">Program Completion</div>
+              <div className="text-[11px] text-neutral-300 tabular-nums">68%</div>
+            </div>
+            <div className="w-full h-2 bg-[#1c1c1c] rounded-full overflow-hidden">
+              <div className="h-full bg-bordeaux-600 rounded-full" style={{ width: "68%" }} />
+            </div>
+          </div>
+          <div className="bg-[#121212] border border-[#1c1c1c] rounded-2xl p-3 space-y-2">
+            <div className="text-[10px] text-neutral-500 uppercase tracking-wider font-semibold">Weekly Heatmap</div>
+            <div className="flex gap-1">
+              {[0.9, 0.7, 1, 0.3, 0.8, 0, 0.6, 1, 0.5, 0.9, 0.2, 0.7].map((v, i) => (
+                <div
+                  key={i}
+                  className="w-4 h-4 rounded-sm"
+                  style={{ backgroundColor: v === 0 ? "#1c1c1c" : `rgba(127, 29, 29, ${0.3 + v * 0.7})` }}
+                />
+              ))}
+            </div>
+            <div className="flex items-center justify-between text-[9px] text-neutral-700">
+              <span>12 weeks ago</span>
+              <span>Today</span>
+            </div>
+          </div>
+          <div className="text-[10px] text-neutral-600 flex items-center gap-1.5">
+            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
+            Track consistency and progress over time
+          </div>
         </div>
       ),
     },
