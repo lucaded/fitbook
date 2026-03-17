@@ -63,7 +63,7 @@ export default function SchedulePage() {
     const dayStr = day.toISOString().split("T")[0];
     return bookings.filter((b) => {
       const bDate = new Date(b.date).toISOString().split("T")[0];
-      const bHour = new Date(b.startTime).getHours();
+      const bHour = new Date(b.startTime).getUTCHours();
       return bDate === dayStr && bHour === hour;
     });
   };
@@ -175,7 +175,7 @@ export default function SchedulePage() {
                         <div>
                           <span className="text-[13px] font-medium text-neutral-200">{b.client?.name || "Unknown"}</span>
                           <span className="text-[12px] text-neutral-600 ml-2 tabular-nums">
-                            {new Date(b.startTime).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}
+                            {new Date(b.startTime).getUTCHours().toString().padStart(2, "0")}:{new Date(b.startTime).getUTCMinutes().toString().padStart(2, "0")}
                           </span>
                         </div>
                         <span className={`pill ${statusColor[b.status] || statusColor.CONFIRMED}`}>
