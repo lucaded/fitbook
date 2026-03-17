@@ -121,6 +121,30 @@ export default function SchedulePage() {
 
   const hours = Array.from({ length: 14 }, (_, i) => i + 7);
   const dayNames = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+  const dayNamesFull = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+
+  // Date options: current week + next week (14 days from current week start)
+  const dateOptions = (() => {
+    const opts: { value: string; label: string }[] = [];
+    const today = new Date();
+    const todayStr = today.toISOString().split("T")[0];
+    for (let w = 0; w < 2; w++) {
+      const days = w === 0 ? weekDays : (() => {
+        const start = new Date(weekDays[0]);
+        start.setDate(start.getDate() + 7);
+        return Array.from({ length: 7 }, (_, i) => { const d = new Date(start); d.setDate(d.getDate() + i); return d; });
+      })();
+      for (let i = 0; i < days.length; i++) {
+        const d = days[i];
+        const val = d.toISOString().split("T")[0];
+        const isToday = val === todayStr;
+        const dayName = dayNamesFull[d.getDay() === 0 ? 6 : d.getDay() - 1];
+        const label = `${dayName} ${d.getDate()}/${(d.getMonth() + 1).toString().padStart(2, "0")}${isToday ? ` (${t("today")})` : ""}`;
+        opts.push({ value: val, label });
+      }
+    }
+    return opts;
+  })();
 
   const getBookingsForDayHour = (day: Date, hour: number) => {
     const dayStr = day.toISOString().split("T")[0];
@@ -360,7 +384,12 @@ export default function SchedulePage() {
               </div>
               <div>
                 <label className="label">{t("date")} *</label>
-                <input type="date" value={modal.date} onChange={(e) => setModal({ ...modal, date: e.target.value })} className="input-field" />
+                <select value={modal.date} onChange={(e) => setModal({ ...modal, date: e.target.value })} className="input-field">
+                  <option value="">{t("select")}</option>
+                  {dateOptions.map((opt) => (
+                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                  ))}
+                </select>
               </div>
             </div>
 
