@@ -94,7 +94,7 @@ export default function SchedulePage() {
       {showAdd && (
         <div className="card p-6 mb-6">
           <h3 className="text-[15px] font-semibold text-neutral-200 mb-5">{t("newBooking")}</h3>
-          <div className="grid grid-cols-5 gap-4 mb-4">
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 sm:gap-4 mb-4">
             <div>
               <label className="label">{t("client")} *</label>
               <select value={form.clientId} onChange={(e) => setForm({ ...form, clientId: e.target.value })} className="input-field">
@@ -148,7 +148,7 @@ export default function SchedulePage() {
       </div>
 
       {/* Grid */}
-      <div className="card overflow-hidden">
+      <div className="card overflow-x-auto -mx-4 sm:mx-0 rounded-none sm:rounded-2xl border-x-0 sm:border-x">
         <div className="grid grid-cols-8 border-b border-[#181818]">
           <div className="p-3 text-[12px] text-neutral-600"></div>
           {weekDays.map((day, i) => {

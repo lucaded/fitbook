@@ -33,13 +33,13 @@ export function TrainerNav() {
   return (
     <>
       <nav className="sticky top-0 z-50 bg-[#0a0a0a]/95 backdrop-blur-xl border-b border-[#181818]">
-        <div className="max-w-7xl mx-auto px-6">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <div className="flex justify-between h-14 items-center">
-            <div className="flex items-center gap-10">
+            <div className="flex items-center gap-4 sm:gap-10">
               <Link href="/trainer" className="text-[17px] font-bold tracking-tight text-neutral-50">
                 FitBook
               </Link>
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-0.5 sm:gap-1">
                 {links.map((link) => {
                   const active = link.exact
                     ? pathname === link.href
@@ -48,7 +48,7 @@ export function TrainerNav() {
                     <Link
                       key={link.href}
                       href={link.href}
-                      className={`text-[14px] px-4 py-1.5 rounded-full transition-all duration-200 ${
+                      className={`text-[13px] sm:text-[14px] px-3 sm:px-4 py-1.5 rounded-full transition-all duration-200 ${
                         active
                           ? "text-neutral-50 bg-[#1a1a1a]"
                           : "text-neutral-500 hover:text-neutral-200"
@@ -61,7 +61,7 @@ export function TrainerNav() {
               </div>
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 sm:gap-3">
               {/* Guide button */}
               <button
                 onClick={() => setShowGuide(true)}
@@ -95,7 +95,7 @@ export function TrainerNav() {
                   <span className="text-[14px] text-neutral-500 hidden sm:inline">{session.user?.name}</span>
                   <button
                     onClick={() => signOut({ callbackUrl: "/login" })}
-                    className="text-[13px] text-neutral-600 hover:text-neutral-400 transition-colors ml-2"
+                    className="text-[13px] text-neutral-600 hover:text-neutral-400 transition-colors ml-1 sm:ml-2 hidden sm:inline"
                   >
                     {t("signOut")}
                   </button>
