@@ -36,13 +36,13 @@ export default function LoginPage() {
             <div className="flex bg-[#111] rounded-full p-0.5 border border-[#1c1c1c]">
               <button
                 onClick={() => setLocale("en")}
-                className={`text-[13px] rounded-full px-4 py-1 transition-all duration-200 ${locale === "en" ? "bg-[#1e1e1e] text-neutral-200" : "text-neutral-600 hover:text-neutral-400"}`}
+                className={`text-[13px] rounded-full px-4 py-1.5 transition-all duration-200 ${locale === "en" ? "bg-[#1e1e1e] text-neutral-200" : "text-neutral-600 hover:text-neutral-400"}`}
               >
                 English
               </button>
               <button
                 onClick={() => setLocale("it")}
-                className={`text-[13px] rounded-full px-4 py-1 transition-all duration-200 ${locale === "it" ? "bg-[#1e1e1e] text-neutral-200" : "text-neutral-600 hover:text-neutral-400"}`}
+                className={`text-[13px] rounded-full px-4 py-1.5 transition-all duration-200 ${locale === "it" ? "bg-[#1e1e1e] text-neutral-200" : "text-neutral-600 hover:text-neutral-400"}`}
               >
                 Italiano
               </button>

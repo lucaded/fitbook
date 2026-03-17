@@ -220,11 +220,11 @@ export default function ProgramEditorPage() {
       </div>
 
       {/* Header */}
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 sm:mb-8 gap-3">
         <div>
-          <div className="flex items-center gap-4">
-            <h1 className="text-xl font-bold tracking-tight print:text-base">{program.name}</h1>
-            <span className="text-[14px] text-neutral-500">{program.client.name}</span>
+          <div className="flex items-center gap-3 sm:gap-4 flex-wrap">
+            <h1 className="text-lg sm:text-xl font-bold tracking-tight print:text-base">{program.name}</h1>
+            <span className="text-[13px] sm:text-[14px] text-neutral-500">{program.client.name}</span>
             {saveStatus === "saving" && (
               <span className="flex items-center gap-1.5 text-[12px] text-amber-500/70">
                 <div className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />{t("saving")}
@@ -240,10 +240,10 @@ export default function ProgramEditorPage() {
             {program.weeks.length} {t("weeks").toLowerCase()}  ·  {program.daysPerWeek} {t("daysPerWeek").toLowerCase()}  ·  +{program.progressionIncrement} kg
           </p>
         </div>
-        <div className="flex items-center gap-1.5 print:hidden">
+        <div className="flex items-center gap-1.5 print:hidden flex-wrap">
           <button onClick={addDay} className="text-[13px] font-medium text-bordeaux-400 hover:text-bordeaux-300 bg-bordeaux-500/[0.08] hover:bg-bordeaux-500/[0.14] px-3.5 py-1.5 rounded-full transition-all duration-200">{t("addDay")}</button>
           {program.daysPerWeek > 1 && <button onClick={removeDay} className="text-[13px] text-neutral-600 hover:text-neutral-400 px-3 py-1.5 rounded-full transition-colors">{t("removeDay")}</button>}
-          <div className="w-px h-5 bg-[#1e1e1e] mx-1" />
+          <div className="w-px h-5 bg-[#1e1e1e] mx-1 hidden sm:block" />
           <div className="flex bg-[#111] rounded-full p-0.5 border border-[#1c1c1c]">
             {(["table", "summary", "charts"] as const).map((v) => (
               <button key={v} onClick={() => setView(v)}
@@ -254,7 +254,7 @@ export default function ProgramEditorPage() {
           </div>
           <button onClick={() => setShowRPETable(!showRPETable)}
             className={`text-[12px] rounded-full px-3.5 py-1 transition-all duration-200 ml-1 ${showRPETable ? "bg-[#1e1e1e] text-neutral-200" : "text-neutral-600 hover:text-neutral-400"}`}>RPE</button>
-          <button onClick={() => window.print()} className="text-[12px] text-neutral-600 hover:text-neutral-400 px-3 py-1 rounded-full transition-colors">{t("print")}</button>
+          <button onClick={() => window.print()} className="text-[12px] text-neutral-600 hover:text-neutral-400 px-3 py-1 rounded-full transition-colors hidden sm:inline">{t("print")}</button>
         </div>
       </div>
 
@@ -326,14 +326,14 @@ export default function ProgramEditorPage() {
               </div>
             </div>
           ))}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="card p-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+            <div className="card p-4 sm:p-5">
               <p className="text-[12px] text-neutral-600">{t("peakVolume")}</p>
-              <p className="text-lg font-semibold tabular-nums text-neutral-200 mt-1">W{peakVol?.weekNumber}  ·  {peakVol?.totalVolume.toLocaleString()} kg</p>
+              <p className="text-base sm:text-lg font-semibold tabular-nums text-neutral-200 mt-1">W{peakVol?.weekNumber}  ·  {peakVol?.totalVolume.toLocaleString()} kg</p>
             </div>
-            <div className="card p-5">
+            <div className="card p-4 sm:p-5">
               <p className="text-[12px] text-neutral-600">{t("peakIntensity")}</p>
-              <p className="text-lg font-semibold tabular-nums text-neutral-200 mt-1">W{peakInt?.weekNumber}  ·  {peakInt?.avgIntensity}%</p>
+              <p className="text-base sm:text-lg font-semibold tabular-nums text-neutral-200 mt-1">W{peakInt?.weekNumber}  ·  {peakInt?.avgIntensity}%</p>
             </div>
           </div>
         </div>
@@ -346,14 +346,14 @@ export default function ProgramEditorPage() {
             const s = getWeekSummary(week);
             const volPct = peakVol && peakVol.totalVolume > 0 ? (s.totalVolume / peakVol.totalVolume) * 100 : 0;
             return (
-              <div key={week.id} className="flex items-center gap-5 px-5 py-3.5">
-                <span className="text-[14px] tabular-nums text-neutral-500 w-12 font-medium">W{week.weekNumber}</span>
-                <div className="flex-1 relative">
+              <div key={week.id} className="flex items-center gap-3 sm:gap-5 px-4 sm:px-5 py-3.5">
+                <span className="text-[14px] tabular-nums text-neutral-500 w-10 sm:w-12 font-medium shrink-0">W{week.weekNumber}</span>
+                <div className="flex-1 relative hidden sm:block">
                   <div className="h-2 bg-[#151515] rounded-full overflow-hidden">
                     <div className="h-full bg-bordeaux-700/40 rounded-full transition-all duration-500" style={{ width: `${volPct}%` }} />
                   </div>
                 </div>
-                <div className="grid grid-cols-3 gap-8 text-[13px] w-80 text-right">
+                <div className="grid grid-cols-3 gap-4 sm:gap-8 text-[12px] sm:text-[13px] flex-1 sm:flex-none sm:w-80 text-right">
                   <div><span className="text-neutral-600">{t("vol")} </span><span className="text-neutral-300 tabular-nums">{s.totalVolume.toLocaleString()}</span></div>
                   <div><span className="text-neutral-600">{t("reps")} </span><span className="text-neutral-300 tabular-nums">{s.totalReps}</span></div>
                   <div><span className="text-neutral-600">{t("int")} </span><span className="text-neutral-300 tabular-nums">{s.avgIntensity > 0 ? `${s.avgIntensity}%` : "—"}</span></div>
@@ -364,9 +364,179 @@ export default function ProgramEditorPage() {
         </div>
       )}
 
-      {/* TABLE */}
+      {/* TABLE — Mobile card view */}
       {view === "table" && (
-        <div className="overflow-x-auto -mx-6 px-6">
+        <div className="sm:hidden space-y-4">
+          {program.weeks.map((week, wIdx) => {
+            const hasExercises = week.days.some((d) => d.exercises.length > 0);
+            return (
+              <div key={week.id} className="card overflow-hidden">
+                <div className="flex items-center justify-between px-4 py-3 border-b border-[#181818] bg-[#0e0e0e]">
+                  <span className="text-[14px] font-medium text-neutral-400 tabular-nums">W{week.weekNumber}</span>
+                  <div className="flex gap-2">
+                    {wIdx > 0 && !hasExercises && (
+                      <button onClick={() => copyWeek(wIdx - 1, wIdx)} className="text-[12px] text-bordeaux-500/60 hover:text-bordeaux-400 transition-colors">Copy W{week.weekNumber - 1}</button>
+                    )}
+                  </div>
+                </div>
+                {week.days.map((day, dIdx) => {
+                  const isActive = activeCell?.week === wIdx && activeCell?.day === dIdx;
+                  const dayComplete = day.exercises.length > 0 && day.exercises.every((e) => e.actualSets !== null);
+                  const dayLabel = program.weeks[0]?.days[dIdx]?.label || `Day ${dIdx + 1}`;
+                  return (
+                    <div key={day.id}
+                      className={`px-4 py-3 border-b border-[#111] last:border-b-0 ${isActive ? "bg-[#0f0f0f]" : ""} ${dayComplete ? "bg-emerald-950/5" : ""}`}
+                      onClick={() => { setActiveCell({ week: wIdx, day: dIdx }); setShowSearch(false); setSearchQuery(""); }}>
+                      <p className="text-[12px] text-neutral-500 font-medium mb-2">{dayLabel}</p>
+                      <div className="space-y-1.5">
+                        {day.exercises.map((ex, eIdx) => {
+                          const oneRM = program.oneRMs[ex.exerciseId] || 0;
+                          const suggestion = getSuggestion(wIdx, dIdx, ex.exerciseId);
+                          const hasActuals = ex.actualSets !== null;
+                          return (
+                            <div key={ex.id} className={`rounded-xl px-3 py-2.5 transition-all duration-200 ${
+                              hasActuals ? "bg-emerald-500/[0.04] border border-emerald-500/10" : "bg-[#111] border border-[#181818]"
+                            }`}>
+                              <div className="flex items-start justify-between gap-2">
+                                <div className="min-w-0">
+                                  <span className="text-[13px] font-semibold text-neutral-100 block">{ex.exerciseName}</span>
+                                  <span className="text-[12px] text-neutral-500 tabular-nums mt-0.5 block">{formatExSummary(ex)}</span>
+                                </div>
+                                <button onClick={(e) => { e.stopPropagation(); removeExercise(wIdx, dIdx, eIdx); }}
+                                  className="text-neutral-700 hover:text-red-400 text-[16px] transition-colors leading-none mt-0.5 shrink-0 p-1">×</button>
+                              </div>
+                              {suggestion && !ex.loadKg && (
+                                <button onClick={(e) => { e.stopPropagation(); updateExercise(wIdx, dIdx, eIdx, suggestion); }}
+                                  className="text-[11px] text-bordeaux-500/70 hover:text-bordeaux-400 mt-1 block transition-colors">
+                                  {t("apply")}: {suggestion.sets} × {suggestion.reps} · {suggestion.loadKg} kg
+                                </button>
+                              )}
+                              {isActive && (
+                                <div className="mt-3" onClick={(e) => e.stopPropagation()}>
+                                  <div className="grid grid-cols-4 gap-1.5 text-[12px]">
+                                    {[
+                                      { label: t("sets"), val: ex.sets, key: "sets", parse: parseInt },
+                                      { label: t("reps"), val: ex.reps, key: "reps", parse: parseInt },
+                                      { label: "%1RM", val: ex.intensityPercent, key: "intensityPercent", parse: parseFloat },
+                                      { label: t("kg"), val: ex.loadKg, key: "loadKg", parse: parseFloat },
+                                    ].map(({ label, val, key, parse }) => (
+                                      <div key={key}>
+                                        <label className="text-[10px] text-neutral-600 mb-0.5 block">{label}</label>
+                                        <input type="number" value={val ?? ""}
+                                          onChange={(e) => updateExercise(wIdx, dIdx, eIdx, { [key]: e.target.value ? parse(e.target.value) : null } as any)}
+                                          className="w-full bg-[#0a0a0a] border border-[#1c1c1c] rounded-lg px-1.5 py-1.5 text-neutral-200 focus:border-bordeaux-700/60 focus:outline-none text-center tabular-nums" />
+                                      </div>
+                                    ))}
+                                  </div>
+                                  <div className="grid grid-cols-3 gap-1.5 mt-1.5 text-[12px]">
+                                    <div>
+                                      <label className="text-[10px] text-neutral-600 mb-0.5 block">RPE</label>
+                                      <select value={ex.rpe ?? ""}
+                                        onChange={(e) => updateExercise(wIdx, dIdx, eIdx, { rpe: e.target.value ? parseFloat(e.target.value) : null })}
+                                        className="w-full bg-[#0a0a0a] border border-[#1c1c1c] rounded-lg px-0 py-1.5 text-neutral-200 focus:border-bordeaux-700/60 focus:outline-none text-center">
+                                        <option value="">—</option>
+                                        {RPE_VALUES.map((v) => <option key={v} value={v}>{v}</option>)}
+                                      </select>
+                                    </div>
+                                    <div className="col-span-2">
+                                      <label className="text-[10px] text-neutral-600 mb-0.5 block">{t("notes")}</label>
+                                      <input type="text" value={ex.notes || ""} placeholder="..."
+                                        onChange={(e) => updateExercise(wIdx, dIdx, eIdx, { notes: e.target.value || null })}
+                                        className="w-full bg-[#0a0a0a] border border-[#1c1c1c] rounded-lg px-2 py-1.5 text-neutral-300 focus:border-bordeaux-700/60 focus:outline-none text-[11px]" />
+                                    </div>
+                                  </div>
+                                  <div className="mt-2.5 pt-2.5 border-t border-[#181818]">
+                                    <p className="text-[10px] text-neutral-600 mb-1.5 font-medium uppercase tracking-wider">{t("actuals")}</p>
+                                    <div className="grid grid-cols-3 gap-1.5 text-[12px]">
+                                      {[
+                                        { label: t("sets"), val: ex.actualSets, key: "actualSets", parse: parseInt },
+                                        { label: t("reps"), val: ex.actualReps, key: "actualReps", parse: parseInt },
+                                        { label: t("kg"), val: ex.actualLoadKg, key: "actualLoadKg", parse: parseFloat },
+                                      ].map(({ label, val, key, parse }) => (
+                                        <div key={key}>
+                                          <input type="number" value={val ?? ""} placeholder={label}
+                                            onChange={(e) => updateExercise(wIdx, dIdx, eIdx, { [key]: e.target.value ? parse(e.target.value) : null } as any)}
+                                            className="w-full bg-[#0a0a0a] border border-[#1c1c1c] rounded-lg px-1.5 py-1.5 text-neutral-200 placeholder-neutral-700 focus:border-bordeaux-700/60 focus:outline-none text-center tabular-nums" />
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                  <div className="flex items-center gap-3 mt-2.5 text-[11px]">
+                                    <button onClick={(e) => { e.stopPropagation(); copyExerciseToAllWeeks(ex, day.dayNumber); }}
+                                      className="text-neutral-600 hover:text-bordeaux-400 transition-colors">{t("copyToAllWeeks")}</button>
+                                    {oneRM > 0 && <span className="text-neutral-700">1RM {oneRM} kg</span>}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                      {/* Add exercise / search */}
+                      {isActive && (
+                        <div className="mt-2.5 space-y-1.5" onClick={(e) => e.stopPropagation()}>
+                          {!showSearch ? (
+                            <div className="flex gap-2">
+                              <button onClick={() => setShowSearch(true)}
+                                className="flex-1 text-[12px] text-neutral-600 hover:text-neutral-300 border border-dashed border-[#1c1c1c] hover:border-[#303030] rounded-xl py-2.5 transition-all duration-200">
+                                {t("addExercise")}
+                              </button>
+                              {day.exercises.length > 0 && !dayComplete && (
+                                <button onClick={() => completeDay(day.id)}
+                                  className="text-[11px] bg-emerald-500/[0.06] text-emerald-500/70 border border-emerald-500/10 rounded-xl px-3.5 py-2.5 hover:bg-emerald-500/10 transition-all duration-200">
+                                  {t("complete")}
+                                </button>
+                              )}
+                            </div>
+                          ) : (
+                            <div className="space-y-1.5">
+                              <input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
+                                placeholder={t("searchExercises")} autoFocus className="input-field text-[13px] py-2.5" />
+                              <div className="max-h-60 overflow-y-auto card divide-y divide-[#181818]">
+                                {filtered.slice(0, 15).map((ex) => (
+                                  <button key={ex.id} onClick={() => addExercise(wIdx, dIdx, ex)}
+                                    className="w-full text-left px-3 py-3 hover:bg-[#161616] flex justify-between items-center text-[13px] transition-colors">
+                                    <div className="min-w-0">
+                                      <span className="text-neutral-300">{ex.name}</span>
+                                      {ex.defaults && (
+                                        <span className="text-[11px] text-neutral-600 ml-2 tabular-nums">
+                                          {ex.defaults.sets}×{ex.defaults.reps}{ex.defaults.rpe ? ` RPE ${ex.defaults.rpe}` : ""}
+                                        </span>
+                                      )}
+                                    </div>
+                                    <span className="text-[10px] text-neutral-600 uppercase tracking-wider shrink-0 ml-2">{catLabel[ex.category]}</span>
+                                  </button>
+                                ))}
+                                {filtered.length === 0 && searchQuery && (
+                                  <button onClick={() => addCustomExercise(searchQuery)}
+                                    className="w-full text-left px-3 py-3 hover:bg-[#161616] text-[13px] text-bordeaux-400">
+                                    + {t("addAsCustom")} &quot;{searchQuery}&quot;
+                                  </button>
+                                )}
+                              </div>
+                              <button onClick={() => { setShowSearch(false); setSearchQuery(""); }}
+                                className="text-[12px] text-neutral-700 hover:text-neutral-500 transition-colors py-1">{t("cancel")}</button>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      {day.exercises.length === 0 && !isActive && (
+                        <div className="text-[12px] text-neutral-700 py-4 text-center border border-dashed border-[#181818] rounded-xl">
+                          {t("clickToAdd")}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* TABLE — Desktop */}
+      {view === "table" && (
+        <div className="overflow-x-auto -mx-6 px-6 hidden sm:block">
           <table className="w-full border-collapse">
             <thead>
               <tr>

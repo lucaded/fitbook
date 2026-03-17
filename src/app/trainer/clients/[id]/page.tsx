@@ -137,12 +137,12 @@ export default function ClientDetailPage() {
         <span className="text-neutral-300">{client.name}</span>
       </div>
 
-      <div className="flex items-center justify-between mb-10">
-        <div className="flex items-center gap-4">
-          <h1 className="text-xl font-bold tracking-tight">{client.name}</h1>
+      <div className="flex items-center justify-between mb-6 sm:mb-10">
+        <div className="flex items-center gap-3 sm:gap-4">
+          <h1 className="text-lg sm:text-xl font-bold tracking-tight">{client.name}</h1>
           <div className={`w-2.5 h-2.5 rounded-full ${client.active ? "bg-emerald-500" : "bg-neutral-700"}`} />
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-1 sm:gap-2">
           <button onClick={() => setEditing(!editing)} className="btn-ghost text-[13px]">
             {editing ? t("cancel") : t("edit")}
           </button>
@@ -152,7 +152,7 @@ export default function ClientDetailPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-8">
         {/* Client Info */}
         <div className="col-span-1 space-y-5">
           <div className="card p-6">
@@ -211,7 +211,7 @@ export default function ClientDetailPage() {
         </div>
 
         {/* Programs */}
-        <div className="col-span-2">
+        <div className="sm:col-span-2">
           <div className="flex items-center justify-between mb-5">
             <h2 className="section-title">{t("programs")}</h2>
             <button onClick={() => setShowNewProgram(!showNewProgram)} className="btn-primary text-[13px] py-2">
@@ -238,7 +238,7 @@ export default function ClientDetailPage() {
                   </select>
                 </div>
               )}
-              <div className="grid grid-cols-3 gap-4 mb-5">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-5">
                 <div>
                   <label className="label">{t("programName")}</label>
                   <input type="text" value={progForm.name} onChange={(e) => setProgForm({ ...progForm, name: e.target.value })}

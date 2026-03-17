@@ -48,21 +48,21 @@ export default function TrainerDashboard() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-3 gap-4 mb-10">
+      <div className="grid grid-cols-3 gap-2 sm:gap-4 mb-10">
         {[
           { value: activeClients.length, label: t("activeClients") },
           { value: totalPrograms, label: t("programs") },
           { value: clients.length - activeClients.length, label: t("inactive") },
         ].map((stat) => (
-          <div key={stat.label} className="card px-6 py-5">
-            <p className="text-3xl font-bold text-neutral-100 tabular-nums">{stat.value}</p>
-            <p className="text-[13px] text-neutral-500 mt-1">{stat.label}</p>
+          <div key={stat.label} className="card px-4 sm:px-6 py-4 sm:py-5">
+            <p className="text-2xl sm:text-3xl font-bold text-neutral-100 tabular-nums">{stat.value}</p>
+            <p className="text-[12px] sm:text-[13px] text-neutral-500 mt-1">{stat.label}</p>
           </div>
         ))}
       </div>
 
       {/* Quick Actions */}
-      <div className="flex gap-3 mb-10">
+      <div className="flex flex-wrap gap-3 mb-10">
         <Link href="/trainer/clients" className="btn-primary text-[14px]">{t("manageClients")}</Link>
         <Link href="/trainer/schedule" className="btn-secondary text-[14px]">{t("viewSchedule")}</Link>
       </div>

@@ -81,7 +81,7 @@ export default function ClientsPage() {
       {showAdd && (
         <div className="card p-6 mb-8">
           <h3 className="text-[15px] font-semibold text-neutral-200 mb-5">{t("newClient")}</h3>
-          <div className="grid grid-cols-3 gap-4 mb-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-4">
             <div>
               <label className="label">{t("name")} *</label>
               <input type="text" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })}
@@ -98,7 +98,7 @@ export default function ClientsPage() {
                 className="input-field" placeholder="+39..." />
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-4 mb-4">
+          <div className="grid grid-cols-2 gap-3 sm:gap-4 mb-4">
             <div>
               <label className="label">{t("heightCm")}</label>
               <input type="number" value={form.height} onChange={(e) => setForm({ ...form, height: e.target.value })}
@@ -110,7 +110,7 @@ export default function ClientsPage() {
                 className="input-field" />
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-4 mb-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-6">
             <div>
               <label className="label">{t("goals")}</label>
               <textarea value={form.goals} onChange={(e) => setForm({ ...form, goals: e.target.value })} rows={2}
@@ -150,9 +150,9 @@ export default function ClientsPage() {
                   {client.email && <p className="text-[13px] text-neutral-600 mt-0.5">{client.email}</p>}
                 </div>
               </div>
-              <div className="flex items-center gap-5">
-                <span className="text-[13px] text-neutral-600 tabular-nums">{client._count.programs} {t("programs").toLowerCase()}</span>
-                <svg className="w-4 h-4 text-neutral-700 group-hover:text-neutral-500 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <div className="flex items-center gap-3 sm:gap-5">
+                <span className="text-[12px] sm:text-[13px] text-neutral-600 tabular-nums">{client._count.programs} {t("programs").toLowerCase()}</span>
+                <svg className="w-4 h-4 text-neutral-700 group-hover:text-neutral-500 transition-colors hidden sm:block" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5l7 7-7 7" />
                 </svg>
               </div>

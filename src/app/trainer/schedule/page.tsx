@@ -135,20 +135,72 @@ export default function SchedulePage() {
       )}
 
       {/* Week nav */}
-      <div className="flex items-center gap-2 mb-6">
+      <div className="flex items-center gap-1.5 sm:gap-2 mb-6 flex-wrap">
         <button onClick={() => setWeekOffset(weekOffset - 1)} className="btn-ghost text-[13px]">{t("prev")}</button>
         <button onClick={() => setWeekOffset(0)}
           className={`text-[13px] px-4 py-2 rounded-full transition-all duration-200 ${weekOffset === 0 ? "bg-bordeaux-800/20 text-bordeaux-400" : "btn-ghost"}`}>
           {t("thisWeek")}
         </button>
         <button onClick={() => setWeekOffset(weekOffset + 1)} className="btn-ghost text-[13px]">{t("next")}</button>
-        <span className="text-[13px] text-neutral-600 ml-3">
+        <span className="text-[12px] sm:text-[13px] text-neutral-600 ml-1 sm:ml-3">
           {weekDays[0].toLocaleDateString("en-GB", { day: "numeric", month: "short" })} — {weekDays[6].toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
         </span>
       </div>
 
-      {/* Grid */}
-      <div className="card overflow-x-auto -mx-4 sm:mx-0 rounded-none sm:rounded-2xl border-x-0 sm:border-x">
+      {/* Mobile: Day list view */}
+      <div className="sm:hidden space-y-3">
+        {weekDays.map((day, i) => {
+          const isToday = day.toDateString() === new Date().toDateString();
+          const dayStr = day.toISOString().split("T")[0];
+          const dayBookings = bookings.filter((b) => {
+            const bDate = new Date(b.date).toISOString().split("T")[0];
+            return bDate === dayStr;
+          }).sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
+          return (
+            <div key={i} className={`card overflow-hidden ${isToday ? "ring-1 ring-bordeaux-800/30" : ""}`}>
+              <div className={`px-4 py-3 border-b border-[#181818] flex items-center justify-between ${isToday ? "bg-bordeaux-950/15" : "bg-[#0e0e0e]"}`}>
+                <div className="flex items-center gap-2">
+                  <span className={`text-[13px] font-medium ${isToday ? "text-bordeaux-400" : "text-neutral-400"}`}>{dayNames[i]}</span>
+                  <span className={`text-[14px] tabular-nums ${isToday ? "text-bordeaux-400 font-bold" : "text-neutral-300"}`}>{day.getDate()}</span>
+                </div>
+                {dayBookings.length > 0 && (
+                  <span className="text-[11px] text-neutral-600">{dayBookings.length} {dayBookings.length === 1 ? "session" : "sessions"}</span>
+                )}
+              </div>
+              {dayBookings.length > 0 ? (
+                <div className="divide-y divide-[#111]">
+                  {dayBookings.map((b) => (
+                    <div key={b.id} className={`px-4 py-3 ${b.status === "CANCELLED" ? "opacity-50" : ""}`}>
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <span className="text-[13px] font-medium text-neutral-200">{b.client?.name || "Unknown"}</span>
+                          <span className="text-[12px] text-neutral-600 ml-2 tabular-nums">
+                            {new Date(b.startTime).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}
+                          </span>
+                        </div>
+                        <span className={`pill ${statusColor[b.status] || statusColor.CONFIRMED}`}>
+                          {typeLabels[b.type] || b.type}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-3 mt-1.5">
+                        {b.status !== "CANCELLED" && (
+                          <button onClick={() => cancelBooking(b.id)} className="text-[11px] text-neutral-600 hover:text-neutral-400 transition-colors">{t("cancel").toLowerCase()}</button>
+                        )}
+                        <button onClick={() => deleteBooking(b.id)} className="text-[11px] text-neutral-600 hover:text-red-400 transition-colors">{t("delete").toLowerCase()}</button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="px-4 py-4 text-[12px] text-neutral-700 text-center">—</div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Desktop: Grid view */}
+      <div className="card overflow-hidden hidden sm:block">
         <div className="grid grid-cols-8 border-b border-[#181818]">
           <div className="p-3 text-[12px] text-neutral-600"></div>
           {weekDays.map((day, i) => {

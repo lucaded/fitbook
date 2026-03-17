@@ -80,8 +80,8 @@ export function Guide({ onClose }: { onClose: () => void }) {
       page: "Clienti / [nome]",
       content: "Qui vedi tutti i dettagli del cliente: informazioni personali, record personali (il miglior carico per ogni esercizio), e la lista dei programmi. Puoi modificare le info, creare un nuovo programma da zero o da un modello esistente.",
       visual: (
-        <div className="grid grid-cols-5 gap-3">
-          <div className="col-span-2 space-y-2">
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 sm:gap-3">
+          <div className="col-span-1 sm:col-span-2 space-y-2">
             <div className="bg-[#121212] border border-[#1c1c1c] rounded-2xl p-3">
               <div className="text-[10px] text-neutral-500 uppercase tracking-wider font-semibold mb-2">Info</div>
               <div className="space-y-1.5 text-[11px]">
@@ -98,7 +98,7 @@ export function Guide({ onClose }: { onClose: () => void }) {
               </div>
             </div>
           </div>
-          <div className="col-span-3">
+          <div className="col-span-1 sm:col-span-3">
             <div className="flex items-center justify-between mb-2">
               <div className="text-[10px] text-neutral-500 uppercase tracking-wider font-semibold">Programmi</div>
               <div className="bg-bordeaux-700 text-white/90 text-[10px] px-2.5 py-1 rounded-xl">Nuovo Programma</div>
@@ -296,8 +296,8 @@ export function Guide({ onClose }: { onClose: () => void }) {
       page: "Clients / [name]",
       content: "Here you see all client details: personal info, personal records (best load per exercise), and their program list. You can edit info, create a new program from scratch or from an existing template.",
       visual: (
-        <div className="grid grid-cols-5 gap-3">
-          <div className="col-span-2 space-y-2">
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 sm:gap-3">
+          <div className="col-span-1 sm:col-span-2 space-y-2">
             <div className="bg-[#121212] border border-[#1c1c1c] rounded-2xl p-3">
               <div className="text-[10px] text-neutral-500 uppercase tracking-wider font-semibold mb-2">Info</div>
               <div className="space-y-1.5 text-[11px]">
@@ -314,7 +314,7 @@ export function Guide({ onClose }: { onClose: () => void }) {
               </div>
             </div>
           </div>
-          <div className="col-span-3">
+          <div className="col-span-1 sm:col-span-3">
             <div className="flex items-center justify-between mb-2">
               <div className="text-[10px] text-neutral-500 uppercase tracking-wider font-semibold">Programs</div>
               <div className="bg-bordeaux-700 text-white/90 text-[10px] px-2.5 py-1 rounded-xl">New Program</div>
@@ -451,13 +451,13 @@ export function Guide({ onClose }: { onClose: () => void }) {
   const isLast = step === steps.length - 1;
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-sm" onClick={onClose}>
-      <div className="bg-[#121212] border border-[#1e1e1e] rounded-2xl w-full max-w-lg mx-4 overflow-hidden shadow-2xl" onClick={(e) => e.stopPropagation()}>
+    <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-black/70 backdrop-blur-sm" onClick={onClose}>
+      <div className="bg-[#121212] border border-[#1e1e1e] rounded-t-2xl sm:rounded-2xl w-full sm:max-w-lg sm:mx-4 max-h-[85vh] overflow-y-auto shadow-2xl" onClick={(e) => e.stopPropagation()}>
         {/* Header */}
-        <div className="px-6 pt-5 pb-4 border-b border-[#181818]">
+        <div className="px-5 sm:px-6 pt-5 pb-4 border-b border-[#181818] sticky top-0 bg-[#121212] z-10">
           <div className="flex items-center justify-between mb-1">
-            <h2 className="text-[16px] font-bold text-neutral-100">{current.title}</h2>
-            <button onClick={onClose} className="text-neutral-600 hover:text-neutral-400 transition-colors text-lg leading-none">×</button>
+            <h2 className="text-[15px] sm:text-[16px] font-bold text-neutral-100">{current.title}</h2>
+            <button onClick={onClose} className="text-neutral-600 hover:text-neutral-400 transition-colors text-lg leading-none p-1">×</button>
           </div>
           <div className="flex items-center gap-2">
             <span className="text-[11px] text-bordeaux-400 bg-bordeaux-500/10 px-2 py-0.5 rounded-full">{current.page}</span>
@@ -466,15 +466,15 @@ export function Guide({ onClose }: { onClose: () => void }) {
         </div>
 
         {/* Content */}
-        <div className="px-6 py-5">
+        <div className="px-5 sm:px-6 py-5">
           <p className="text-[13px] text-neutral-400 leading-relaxed mb-5">{current.content}</p>
-          <div className="bg-[#0a0a0a] rounded-xl border border-[#181818] p-4">
+          <div className="bg-[#0a0a0a] rounded-xl border border-[#181818] p-3 sm:p-4 overflow-x-auto">
             {current.visual}
           </div>
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t border-[#181818] flex items-center justify-between">
+        <div className="px-5 sm:px-6 py-4 border-t border-[#181818] flex items-center justify-between sticky bottom-0 bg-[#121212]">
           <div className="flex gap-1">
             {steps.map((_, i) => (
               <button key={i} onClick={() => setStep(i)}
@@ -483,16 +483,16 @@ export function Guide({ onClose }: { onClose: () => void }) {
           </div>
           <div className="flex gap-2">
             {step > 0 && (
-              <button onClick={() => setStep(step - 1)} className="text-[13px] text-neutral-500 hover:text-neutral-300 px-3 py-1.5 rounded-full transition-colors">
+              <button onClick={() => setStep(step - 1)} className="text-[13px] text-neutral-500 hover:text-neutral-300 px-3 py-2 rounded-full transition-colors">
                 {locale === "it" ? "Indietro" : "Back"}
               </button>
             )}
             {isLast ? (
-              <button onClick={onClose} className="text-[13px] font-medium text-white bg-bordeaux-700 hover:bg-bordeaux-600 px-5 py-1.5 rounded-full transition-colors">
+              <button onClick={onClose} className="text-[13px] font-medium text-white bg-bordeaux-700 hover:bg-bordeaux-600 px-5 py-2 rounded-full transition-colors">
                 {locale === "it" ? "Inizia" : "Get Started"}
               </button>
             ) : (
-              <button onClick={() => setStep(step + 1)} className="text-[13px] font-medium text-white bg-bordeaux-700 hover:bg-bordeaux-600 px-5 py-1.5 rounded-full transition-colors">
+              <button onClick={() => setStep(step + 1)} className="text-[13px] font-medium text-white bg-bordeaux-700 hover:bg-bordeaux-600 px-5 py-2 rounded-full transition-colors">
                 {locale === "it" ? "Avanti" : "Next"}
               </button>
             )}
