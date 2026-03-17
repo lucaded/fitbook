@@ -11,6 +11,7 @@ import {
   calcLoad, calcIntensity, calcRelativeIntensity, type LibraryExercise,
 } from "@/lib/training-data";
 import { useI18n } from "@/lib/i18n";
+import { ConfirmModal } from "@/components/ConfirmModal";
 
 interface ProgramExercise {
   id: string; dayId: string; exerciseName: string; exerciseId: string; order: number;
@@ -91,10 +92,14 @@ export default function ProgramEditorPage() {
   };
 
   const addDay = async () => { if (!program) return; markSaving(); await fetch(`/api/programs/${program.id}/days`, { method: "POST" }); markSaved(); loadProgram(); };
-  const removeDay = async () => {
+  const [showRemoveDayConfirm, setShowRemoveDayConfirm] = useState(false);
+  const removeDay = () => {
     if (!program || program.daysPerWeek <= 1) return;
-    if (!confirm(`Remove Day ${program.daysPerWeek} from all weeks?`)) return;
-    markSaving(); await fetch(`/api/programs/${program.id}/days`, { method: "DELETE" }); markSaved(); loadProgram();
+    setShowRemoveDayConfirm(true);
+  };
+  const confirmRemoveDay = async () => {
+    setShowRemoveDayConfirm(false);
+    markSaving(); await fetch(`/api/programs/${program!.id}/days`, { method: "DELETE" }); markSaved(); loadProgram();
   };
 
   const addExercise = async (weekIdx: number, dayIdx: number, libEx: LibraryExercise) => {
@@ -242,7 +247,7 @@ export default function ProgramEditorPage() {
         </div>
         <div className="flex items-center gap-1.5 print:hidden flex-wrap">
           <button onClick={addDay} className="text-[13px] font-medium text-bordeaux-400 hover:text-bordeaux-300 bg-bordeaux-500/[0.08] hover:bg-bordeaux-500/[0.14] px-3.5 py-1.5 rounded-full transition-all duration-200">{t("addDay")}</button>
-          {program.daysPerWeek > 1 && <button onClick={removeDay} className="text-[13px] text-neutral-600 hover:text-neutral-400 px-3 py-1.5 rounded-full transition-colors">{t("removeDay")}</button>}
+          {(program.weeks[0]?.days.length || 0) > 1 && <button onClick={removeDay} className="text-[13px] text-neutral-600 hover:text-neutral-400 px-3 py-1.5 rounded-full transition-colors">{t("removeDay")}</button>}
           <div className="w-px h-5 bg-[#1e1e1e] mx-1 hidden sm:block" />
           <div className="flex bg-[#111] rounded-full p-0.5 border border-[#1c1c1c]">
             {(["table", "summary", "charts"] as const).map((v) => (
@@ -538,30 +543,39 @@ export default function ProgramEditorPage() {
                 <th className="text-left text-[12px] text-neutral-600 p-2.5 w-16 sticky left-0 bg-[#0a0a0a] z-10 print:bg-white"></th>
                 {(program.weeks[0]?.days || []).map((firstWeekDay, i) => {
                   const label = firstWeekDay?.label;
+                  const isLast = i === (program.weeks[0]?.days.length || 1) - 1;
                   return (
                     <th key={i} className="text-left text-[13px] text-neutral-400 p-2.5 min-w-[230px] print:min-w-0 font-medium">
-                      {editingLabel?.dayId === firstWeekDay?.id ? (
-                        <input type="text" autoFocus value={editingLabel.value}
-                          onChange={(e) => setEditingLabel({ ...editingLabel, value: e.target.value })}
-                          onBlur={() => saveDayLabel(firstWeekDay.id, editingLabel.value)}
-                          onKeyDown={(e) => { if (e.key === "Enter") saveDayLabel(firstWeekDay.id, editingLabel.value); }}
-                          className="bg-[#111] border border-bordeaux-700/50 rounded-lg px-2.5 py-1 text-[13px] text-white focus:outline-none w-32" />
-                      ) : (
-                        <span className="cursor-pointer hover:text-neutral-200 transition-colors group/label"
-                          onClick={() => setEditingLabel({ dayId: firstWeekDay?.id || "", value: label || "" })}>
-                          {label || `Day ${i + 1}`}
-                          <span className="text-neutral-700 ml-2 text-[10px] opacity-0 group-hover/label:opacity-100 transition-opacity">edit</span>
-                        </span>
-                      )}
+                      <div className="flex items-center justify-between group/dayheader">
+                        {editingLabel?.dayId === firstWeekDay?.id ? (
+                          <input type="text" autoFocus value={editingLabel.value}
+                            onChange={(e) => setEditingLabel({ ...editingLabel, value: e.target.value })}
+                            onBlur={() => saveDayLabel(firstWeekDay.id, editingLabel.value)}
+                            onKeyDown={(e) => { if (e.key === "Enter") saveDayLabel(firstWeekDay.id, editingLabel.value); }}
+                            className="bg-[#111] border border-bordeaux-700/50 rounded-lg px-2.5 py-1 text-[13px] text-white focus:outline-none w-32" />
+                        ) : (
+                          <span className="cursor-pointer hover:text-neutral-200 transition-colors group/label"
+                            onClick={() => setEditingLabel({ dayId: firstWeekDay?.id || "", value: label || "" })}>
+                            {label || `Day ${i + 1}`}
+                            <span className="text-neutral-700 ml-2 text-[10px] opacity-0 group-hover/label:opacity-100 transition-opacity">edit</span>
+                          </span>
+                        )}
+                        {isLast && (program.weeks[0]?.days.length || 0) > 1 && (
+                          <button onClick={removeDay}
+                            className="text-neutral-800 hover:text-red-400 text-[11px] transition-colors opacity-0 group-hover/dayheader:opacity-100 print:hidden px-1"
+                            title={t("removeDay")}>×</button>
+                        )}
+                      </div>
                     </th>
                   );
                 })}
-                <th className="text-left text-[12px] text-neutral-600 p-2.5 w-44 print:hidden font-normal">{t("summary")}</th>
+                <th className="p-2.5 print:hidden w-10">
+                  <button onClick={addDay} className="text-neutral-700 hover:text-bordeaux-400 text-[16px] transition-colors" title={t("addDay")}>+</button>
+                </th>
               </tr>
             </thead>
             <tbody>
               {program.weeks.map((week, wIdx) => {
-                const summary = getWeekSummary(week);
                 const hasExercises = week.days.some((d) => d.exercises.length > 0);
                 return (
                   <tr key={week.id} className="border-t border-[#141414] align-top print:break-inside-avoid">
@@ -736,19 +750,24 @@ export default function ProgramEditorPage() {
                         </td>
                       );
                     })}
-                    <td className="p-2.5 border-l border-[#111] align-top print:hidden">
-                      <div className="text-[12px] space-y-1.5 card p-3.5">
-                        <div className="flex justify-between"><span className="text-neutral-600">{t("vol")}</span><span className="text-neutral-400 tabular-nums">{summary.totalVolume.toLocaleString()}</span></div>
-                        <div className="flex justify-between"><span className="text-neutral-600">{t("reps")}</span><span className="text-neutral-400 tabular-nums">{summary.totalReps}</span></div>
-                        <div className="flex justify-between"><span className="text-neutral-600">{t("int")}</span><span className="text-neutral-400 tabular-nums">{summary.avgIntensity > 0 ? `${summary.avgIntensity}%` : "—"}</span></div>
-                      </div>
-                    </td>
+                    <td className="print:hidden"></td>
                   </tr>
                 );
               })}
             </tbody>
           </table>
         </div>
+      )}
+      {showRemoveDayConfirm && (
+        <ConfirmModal
+          title={t("removeDay")}
+          message={t("removeDayConfirm").replace("{n}", String(program.weeks[0]?.days.length || 0))}
+          confirmLabel={t("delete")}
+          cancelLabel={t("cancel")}
+          destructive
+          onConfirm={confirmRemoveDay}
+          onCancel={() => setShowRemoveDayConfirm(false)}
+        />
       )}
     </div>
   );
