@@ -177,7 +177,7 @@ export default function ProgramEditorPage() {
     if (ex.loadKg) parts.push(`${Math.round(ex.loadKg * 10) / 10} kg`);
     else if (ex.intensityPercent) parts.push(`${Math.round(ex.intensityPercent)}%`);
     if (ex.rpe) parts.push(`RPE ${Math.round(ex.rpe * 2) / 2}`);
-    return parts.join("  ·  ");
+    return parts.join("  \u2022  ");
   };
 
   const allExercises = EXERCISE_LIBRARY;
@@ -353,10 +353,10 @@ export default function ProgramEditorPage() {
                     <div className="h-full bg-bordeaux-700/40 rounded-full transition-all duration-500" style={{ width: `${volPct}%` }} />
                   </div>
                 </div>
-                <div className="grid grid-cols-3 gap-4 sm:gap-8 text-[12px] sm:text-[13px] flex-1 sm:flex-none sm:w-80 text-right">
-                  <div><span className="text-neutral-600">{t("vol")} </span><span className="text-neutral-300 tabular-nums">{s.totalVolume.toLocaleString()}</span></div>
-                  <div><span className="text-neutral-600">{t("reps")} </span><span className="text-neutral-300 tabular-nums">{s.totalReps}</span></div>
-                  <div><span className="text-neutral-600">{t("int")} </span><span className="text-neutral-300 tabular-nums">{s.avgIntensity > 0 ? `${s.avgIntensity}%` : "—"}</span></div>
+                <div className="grid grid-cols-3 gap-4 sm:gap-8 text-[12px] sm:text-[13px] flex-1 sm:flex-none sm:w-80">
+                  <div><span className="text-neutral-600 block sm:inline">{t("vol")}</span> <span className="text-neutral-300 tabular-nums">{s.totalVolume.toLocaleString()}</span></div>
+                  <div><span className="text-neutral-600 block sm:inline">{t("reps")}</span> <span className="text-neutral-300 tabular-nums">{s.totalReps}</span></div>
+                  <div><span className="text-neutral-600 block sm:inline">{t("int")}</span> <span className="text-neutral-300 tabular-nums">{s.avgIntensity > 0 ? `${s.avgIntensity}%` : "—"}</span></div>
                 </div>
               </div>
             );
@@ -402,8 +402,8 @@ export default function ProgramEditorPage() {
                             }`}>
                               <div className="flex items-start justify-between gap-2">
                                 <div className="min-w-0">
-                                  <span className="text-[13px] font-semibold text-neutral-100 block">{ex.exerciseName}</span>
-                                  <span className="text-[12px] text-neutral-500 tabular-nums mt-0.5 block">{formatExSummary(ex)}</span>
+                                  <span className="text-[14px] font-semibold text-white block">{ex.exerciseName}</span>
+                                  <span className="text-[13px] text-neutral-500 tabular-nums mt-0.5 block">{formatExSummary(ex)}</span>
                                 </div>
                                 <button onClick={(e) => { e.stopPropagation(); removeExercise(wIdx, dIdx, eIdx); }}
                                   className="text-neutral-700 hover:text-red-400 text-[16px] transition-colors leading-none mt-0.5 shrink-0 p-1">×</button>
@@ -605,8 +605,8 @@ export default function ProgramEditorPage() {
                                   {/* Row 1: Name + clean summary */}
                                   <div className="flex items-start justify-between gap-2">
                                     <div className="min-w-0">
-                                      <span className="text-[13px] font-semibold text-neutral-100 block">{ex.exerciseName}</span>
-                                      <span className="text-[12px] text-neutral-500 tabular-nums mt-0.5 block">
+                                      <span className="text-[14px] font-semibold text-white block">{ex.exerciseName}</span>
+                                      <span className="text-[13px] text-neutral-500 tabular-nums mt-0.5 block">
                                         {formatExSummary(ex)}
                                       </span>
                                     </div>
