@@ -1,10 +1,10 @@
 import type { Metadata, Viewport } from "next";
-import { Inter } from "next/font/google";
+import { DM_Sans } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/Providers";
 import { ServiceWorkerRegister } from "@/components/ServiceWorkerRegister";
 
-const inter = Inter({ subsets: ["latin"] });
+const dmSans = DM_Sans({ subsets: ["latin"], weight: ["400", "500", "600", "700"] });
 
 export const metadata: Metadata = {
   title: "FitBook - Antonio De Donno Personal Training",
@@ -16,6 +16,7 @@ export const metadata: Metadata = {
     title: "FitBook",
   },
   icons: {
+    icon: "/icons/fitbook-mark.svg",
     apple: "/icons/apple-touch-icon.png",
   },
 };
@@ -35,7 +36,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={inter.className}>
+      <body className={dmSans.className}>
         <Providers>{children}</Providers>
         <ServiceWorkerRegister />
       </body>

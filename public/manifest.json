@@ -23,6 +23,11 @@
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
+    },
+    {
+      "src": "/icons/fitbook-app-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
     }
   ]
 }

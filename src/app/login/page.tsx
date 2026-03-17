@@ -27,7 +27,8 @@ export default function LoginPage() {
       <div className="w-full max-w-sm">
         <div className="card p-8">
           <div className="text-center mb-8">
-            <h1 className="text-2xl font-bold tracking-tight text-neutral-50 mb-1.5">FitBook</h1>
+            <img src="/icons/fitbook-app-icon.svg" alt="FitBook" className="w-16 h-16 mx-auto mb-4 rounded-2xl" />
+            <img src="/icons/fitbook-logo-dark.svg" alt="FitBook" className="h-7 mx-auto mb-2" />
             <p className="text-[14px] text-neutral-500">{t("personalTrainingMgmt")}</p>
           </div>
 

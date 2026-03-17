@@ -1,0 +1,11 @@
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <rect width="512" height="512" rx="112" fill="#1a1a1a"/>
+  <!-- Top bar: barbell shape -->
+  <rect x="104" y="116" width="58" height="58" rx="18" fill="#8B3A4A"/>
+  <rect x="154" y="128" width="114" height="34" rx="12" fill="#8B3A4A"/>
+  <rect x="260" y="116" width="58" height="58" rx="18" fill="#8B3A4A"/>
+  <!-- Middle bar -->
+  <rect x="160" y="220" width="196" height="48" rx="18" fill="#8B3A4A" opacity="0.65"/>
+  <!-- Bottom bar -->
+  <rect x="128" y="316" width="138" height="48" rx="18" fill="#8B3A4A" opacity="0.35"/>
+</svg>

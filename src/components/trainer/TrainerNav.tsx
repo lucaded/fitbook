@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
 import { useI18n } from "@/lib/i18n";
@@ -36,8 +37,8 @@ export function TrainerNav() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <div className="flex justify-between h-14 items-center">
             <div className="flex items-center gap-4 sm:gap-10">
-              <Link href="/trainer" className="text-[17px] font-bold tracking-tight text-neutral-50">
-                FitBook
+              <Link href="/trainer" className="flex items-center shrink-0">
+                <Image src="/icons/fitbook-logo-dark.svg" alt="FitBook" width={120} height={24} className="h-6 w-auto" priority />
               </Link>
               <div className="flex items-center gap-0.5 sm:gap-1">
                 {links.map((link) => {

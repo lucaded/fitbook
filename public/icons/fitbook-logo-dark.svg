@@ -1,0 +1,11 @@
+<svg width="240" height="48" viewBox="0 0 240 48" xmlns="http://www.w3.org/2000/svg">
+  <!-- Barbell bar mark -->
+  <rect x="0" y="8" width="8" height="8" rx="2.5" fill="#8B3A4A"/>
+  <rect x="7" y="10" width="14" height="4" rx="1.5" fill="#8B3A4A"/>
+  <rect x="20" y="8" width="8" height="8" rx="2.5" fill="#8B3A4A"/>
+  <!-- Session bars -->
+  <rect x="6" y="21" width="20" height="5" rx="2" fill="#8B3A4A" opacity="0.65"/>
+  <rect x="3" y="30" width="16" height="5" rx="2" fill="#8B3A4A" opacity="0.35"/>
+  <!-- Wordmark -->
+  <text x="40" y="30" font-family="'DM Sans', 'Helvetica Neue', 'Segoe UI', sans-serif" font-size="26" font-weight="500" letter-spacing="-0.3" fill="#e8e8e6">fitbook</text>
+</svg>
