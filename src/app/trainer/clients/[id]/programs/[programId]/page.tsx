@@ -386,8 +386,11 @@ export default function ProgramEditorPage() {
                   return (
                     <div key={day.id}
                       className={`px-4 py-3 border-b border-[#111] last:border-b-0 ${isActive ? "bg-[#0f0f0f]" : ""} ${dayComplete ? "bg-emerald-950/5" : ""}`}
-                      onClick={() => { setActiveCell({ week: wIdx, day: dIdx }); setShowSearch(false); setSearchQuery(""); }}>
-                      <p className="text-[12px] text-neutral-500 font-medium mb-2">{dayLabel}</p>
+                      onClick={() => { setActiveCell(isActive ? null : { week: wIdx, day: dIdx }); setShowSearch(false); setSearchQuery(""); }}>
+                      <div className="flex items-center justify-between mb-2">
+                        <p className="text-[12px] text-neutral-500 font-medium">{dayLabel}</p>
+                        <span className={`text-[11px] transition-transform ${isActive ? "rotate-180" : ""}`}>▾</span>
+                      </div>
                       <div className="space-y-1.5">
                         {day.exercises.map((ex, eIdx) => {
                           const oneRM = program.oneRMs[ex.exerciseId] || 0;
@@ -588,7 +591,7 @@ export default function ProgramEditorPage() {
                       return (
                         <td key={day.id}
                           className={`p-2 border-l border-[#111] cursor-pointer transition-all duration-200 ${isActive ? "bg-[#0f0f0f]" : "hover:bg-[#0d0d0d]"} ${dayComplete ? "bg-emerald-950/5" : ""}`}
-                          onClick={() => { setActiveCell({ week: wIdx, day: dIdx }); setShowSearch(false); setSearchQuery(""); }}>
+                          onClick={() => { setActiveCell(isActive ? null : { week: wIdx, day: dIdx }); setShowSearch(false); setSearchQuery(""); }}>
 
                           <div className="space-y-1.5">
                             {day.exercises.map((ex, eIdx) => {
