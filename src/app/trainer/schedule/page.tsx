@@ -10,6 +10,12 @@ interface Booking {
   client: { id: string; name: string } | null;
 }
 
+const TIME_SLOTS = Array.from({ length: 28 }, (_, i) => {
+  const h = Math.floor(i / 2) + 7;
+  const m = i % 2 === 0 ? "00" : "30";
+  return `${h.toString().padStart(2, "0")}:${m}`;
+});
+
 export default function SchedulePage() {
   const { t } = useI18n();
   const [clients, setClients] = useState<Client[]>([]);
@@ -30,20 +36,29 @@ export default function SchedulePage() {
   };
   const weekDays = getWeekDays();
 
-  useEffect(() => {
+  const loadBookings = () => {
     const from = weekDays[0].toISOString().split("T")[0];
     const to = weekDays[6].toISOString().split("T")[0];
     fetch(`/api/bookings?from=${from}&to=${to}`).then((r) => r.json()).then(setBookings);
-  }, [weekOffset]);
+  };
+
+  useEffect(() => { loadBookings(); }, [weekOffset]);
+
+  const openFormForSlot = (day: Date, hour: number) => {
+    const dateStr = day.toISOString().split("T")[0];
+    const startTime = `${hour.toString().padStart(2, "0")}:00`;
+    const endHour = Math.min(hour + 1, 20);
+    const endTime = `${endHour.toString().padStart(2, "0")}:00`;
+    setForm({ clientId: "", date: dateStr, startTime, endTime, type: "PERSONAL", notes: "" });
+    setShowAdd(true);
+  };
 
   const createBooking = async () => {
     if (!form.clientId || !form.date) return;
     await fetch("/api/bookings", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(form) });
     setShowAdd(false);
     setForm({ clientId: "", date: "", startTime: "09:00", endTime: "10:00", type: "PERSONAL", notes: "" });
-    const from = weekDays[0].toISOString().split("T")[0];
-    const to = weekDays[6].toISOString().split("T")[0];
-    fetch(`/api/bookings?from=${from}&to=${to}`).then((r) => r.json()).then(setBookings);
+    loadBookings();
   };
 
   const cancelBooking = async (id: string) => {
@@ -54,6 +69,13 @@ export default function SchedulePage() {
   const deleteBooking = async (id: string) => {
     await fetch(`/api/bookings/${id}`, { method: "DELETE" });
     setBookings(bookings.filter((b) => b.id !== id));
+  };
+
+  // Auto-set end time 1h after start
+  const setStartTime = (time: string) => {
+    const [h, m] = time.split(":").map(Number);
+    const endH = Math.min(h + 1, 20);
+    setForm({ ...form, startTime: time, endTime: `${endH.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}` });
   };
 
   const hours = Array.from({ length: 14 }, (_, i) => i + 7);
@@ -81,20 +103,26 @@ export default function SchedulePage() {
     ONLINE: t("online"),
   };
 
+  const formatTime = (iso: string) => {
+    const d = new Date(iso);
+    return `${d.getUTCHours().toString().padStart(2, "0")}:${d.getUTCMinutes().toString().padStart(2, "0")}`;
+  };
+
   return (
     <div>
       <div className="flex items-center justify-between mb-2">
         <h1 className="text-xl font-bold tracking-tight">{t("schedule")}</h1>
-        <button onClick={() => setShowAdd(!showAdd)} className="btn-primary text-[14px]">
+        <button onClick={() => { setShowAdd(!showAdd); if (showAdd) setForm({ clientId: "", date: "", startTime: "09:00", endTime: "10:00", type: "PERSONAL", notes: "" }); }} className="btn-primary text-[14px]">
           {showAdd ? t("cancel") : t("newBooking")}
         </button>
       </div>
-      <p className="text-[14px] text-neutral-500 mb-8">{t("scheduleSub")}</p>
+      <p className="text-[14px] text-neutral-500 mb-6 sm:mb-8">{t("scheduleSub")}</p>
 
+      {/* Booking form */}
       {showAdd && (
-        <div className="card p-6 mb-6">
+        <div className="card p-5 sm:p-6 mb-6">
           <h3 className="text-[15px] font-semibold text-neutral-200 mb-5">{t("newBooking")}</h3>
-          <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 sm:gap-4 mb-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-4">
             <div>
               <label className="label">{t("client")} *</label>
               <select value={form.clientId} onChange={(e) => setForm({ ...form, clientId: e.target.value })} className="input-field">
@@ -106,13 +134,19 @@ export default function SchedulePage() {
               <label className="label">{t("date")} *</label>
               <input type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} className="input-field" />
             </div>
+          </div>
+          <div className="grid grid-cols-3 gap-3 sm:gap-4 mb-4">
             <div>
               <label className="label">{t("start")}</label>
-              <input type="time" value={form.startTime} onChange={(e) => setForm({ ...form, startTime: e.target.value })} className="input-field" />
+              <select value={form.startTime} onChange={(e) => setStartTime(e.target.value)} className="input-field">
+                {TIME_SLOTS.map((t) => <option key={t} value={t}>{t}</option>)}
+              </select>
             </div>
             <div>
               <label className="label">{t("end")}</label>
-              <input type="time" value={form.endTime} onChange={(e) => setForm({ ...form, endTime: e.target.value })} className="input-field" />
+              <select value={form.endTime} onChange={(e) => setForm({ ...form, endTime: e.target.value })} className="input-field">
+                {TIME_SLOTS.filter((t) => t > form.startTime).map((t) => <option key={t} value={t}>{t}</option>)}
+              </select>
             </div>
             <div>
               <label className="label">{t("type")}</label>
@@ -163,9 +197,10 @@ export default function SchedulePage() {
                   <span className={`text-[13px] font-medium ${isToday ? "text-bordeaux-400" : "text-neutral-400"}`}>{dayNames[i]}</span>
                   <span className={`text-[14px] tabular-nums ${isToday ? "text-bordeaux-400 font-bold" : "text-neutral-300"}`}>{day.getDate()}</span>
                 </div>
-                {dayBookings.length > 0 && (
-                  <span className="text-[11px] text-neutral-600">{dayBookings.length} {dayBookings.length === 1 ? "session" : "sessions"}</span>
-                )}
+                <button
+                  onClick={() => openFormForSlot(day, 9)}
+                  className="text-[11px] text-neutral-600 hover:text-bordeaux-400 transition-colors px-2 py-1"
+                >+ {t("newBooking").toLowerCase()}</button>
               </div>
               {dayBookings.length > 0 ? (
                 <div className="divide-y divide-[#111]">
@@ -175,7 +210,7 @@ export default function SchedulePage() {
                         <div>
                           <span className="text-[13px] font-medium text-neutral-200">{b.client?.name || "Unknown"}</span>
                           <span className="text-[12px] text-neutral-600 ml-2 tabular-nums">
-                            {new Date(b.startTime).getUTCHours().toString().padStart(2, "0")}:{new Date(b.startTime).getUTCMinutes().toString().padStart(2, "0")}
+                            {formatTime(b.startTime)} – {formatTime(b.endTime)}
                           </span>
                         </div>
                         <span className={`pill ${statusColor[b.status] || statusColor.CONFIRMED}`}>
@@ -220,19 +255,25 @@ export default function SchedulePage() {
             {weekDays.map((day, di) => {
               const dayBookings = getBookingsForDayHour(day, hour);
               return (
-                <div key={di} className="px-1.5 py-1 border-l border-[#111] min-h-[48px]">
-                  {dayBookings.map((b) => (
+                <div key={di}
+                  className="px-1.5 py-1 border-l border-[#111] min-h-[48px] cursor-pointer hover:bg-[#0d0d0d] transition-colors group/cell"
+                  onClick={() => { if (dayBookings.length === 0) openFormForSlot(day, hour); }}>
+                  {dayBookings.length > 0 ? dayBookings.map((b) => (
                     <div key={b.id} className={`text-[11px] rounded-xl px-2 py-1.5 border mb-1 ${statusColor[b.status] || statusColor.CONFIRMED}`}>
                       <div className="font-medium">{b.client?.name || "Unknown"}</div>
                       <div className="flex items-center gap-2 mt-0.5">
                         <span className="uppercase text-[9px] opacity-60">{typeLabels[b.type] || b.type}</span>
                         {b.status !== "CANCELLED" && (
-                          <button onClick={() => cancelBooking(b.id)} className="text-[9px] opacity-30 hover:opacity-80 underline transition-opacity">{t("cancel").toLowerCase()}</button>
+                          <button onClick={(e) => { e.stopPropagation(); cancelBooking(b.id); }} className="text-[9px] opacity-30 hover:opacity-80 underline transition-opacity">{t("cancel").toLowerCase()}</button>
                         )}
-                        <button onClick={() => deleteBooking(b.id)} className="text-[9px] opacity-30 hover:opacity-80 text-red-400 underline transition-opacity">{t("delete").toLowerCase()}</button>
+                        <button onClick={(e) => { e.stopPropagation(); deleteBooking(b.id); }} className="text-[9px] opacity-30 hover:opacity-80 text-red-400 underline transition-opacity">{t("delete").toLowerCase()}</button>
                       </div>
                     </div>
-                  ))}
+                  )) : (
+                    <div className="w-full h-full flex items-center justify-center opacity-0 group-hover/cell:opacity-100 transition-opacity">
+                      <span className="text-[10px] text-neutral-700">+</span>
+                    </div>
+                  )}
                 </div>
               );
             })}
