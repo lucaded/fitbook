@@ -103,7 +103,7 @@ export default function ProgramEditorPage() {
     const suggestion = getSuggestion(weekIdx, dayIdx, libEx.id);
     markSaving();
     const res = await fetch(`/api/programs/${program.id}/exercises`, { method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ dayId: day.id, exerciseName: libEx.name, exerciseId: libEx.id, order: day.exercises.length, sets: suggestion?.sets || 3, reps: suggestion?.reps || 5, intensityPercent: suggestion?.intensityPercent || null, loadKg: suggestion?.loadKg || null }) });
+      body: JSON.stringify({ dayId: day.id, exerciseName: libEx.name, exerciseId: libEx.id, order: day.exercises.length, sets: suggestion?.sets || libEx.defaults?.sets || 3, reps: suggestion?.reps || libEx.defaults?.reps || 5, rpe: libEx.defaults?.rpe || null, intensityPercent: suggestion?.intensityPercent || null, loadKg: suggestion?.loadKg || null }) });
     const exercise = await res.json();
     const updated = { ...program }; updated.weeks = [...updated.weeks]; updated.weeks[weekIdx] = { ...updated.weeks[weekIdx] };
     updated.weeks[weekIdx].days = [...updated.weeks[weekIdx].days];
@@ -168,7 +168,7 @@ export default function ProgramEditorPage() {
   };
 
   const addCustomExercise = (name: string) => {
-    if (activeCell) addExercise(activeCell.week, activeCell.day, { id: `custom-${Date.now()}`, name, category: "custom", muscleGroups: [] });
+    if (activeCell) addExercise(activeCell.week, activeCell.day, { id: `custom-${Date.now()}`, name, category: "custom", muscleGroups: [], defaults: { sets: 3, reps: 10 } });
   };
 
   // Format exercise summary — clean, no @ symbol
@@ -539,8 +539,15 @@ export default function ProgramEditorPage() {
                                     {filtered.slice(0, 15).map((ex) => (
                                       <button key={ex.id} onClick={() => addExercise(wIdx, dIdx, ex)}
                                         className="w-full text-left px-3 py-2.5 hover:bg-[#161616] flex justify-between items-center text-[13px] transition-colors">
-                                        <span className="text-neutral-300">{ex.name}</span>
-                                        <span className="text-[10px] text-neutral-600 uppercase tracking-wider">{catLabel[ex.category]}</span>
+                                        <div className="min-w-0">
+                                          <span className="text-neutral-300">{ex.name}</span>
+                                          {ex.defaults && (
+                                            <span className="text-[11px] text-neutral-600 ml-2 tabular-nums">
+                                              {ex.defaults.sets}×{ex.defaults.reps}{ex.defaults.rpe ? ` RPE ${ex.defaults.rpe}` : ""}
+                                            </span>
+                                          )}
+                                        </div>
+                                        <span className="text-[10px] text-neutral-600 uppercase tracking-wider shrink-0 ml-2">{catLabel[ex.category]}</span>
                                       </button>
                                     ))}
                                     {filtered.length === 0 && searchQuery && (

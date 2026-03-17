@@ -153,6 +153,7 @@ export default function ProgramPage() {
       name,
       category: "custom",
       muscleGroups: [],
+      defaults: { sets: 3, reps: 10 },
     };
     updateProgram({
       ...program,
