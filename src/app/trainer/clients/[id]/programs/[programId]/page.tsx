@@ -544,8 +544,7 @@ export default function ProgramEditorPage() {
             <thead>
               <tr>
                 <th className="text-left text-[12px] text-neutral-600 p-2.5 w-16 sticky left-0 bg-[#0a0a0a] z-10 print:bg-white"></th>
-                {Array.from({ length: program.daysPerWeek }, (_, i) => {
-                  const firstWeekDay = program.weeks[0]?.days[i];
+                {(program.weeks[0]?.days || []).map((firstWeekDay, i) => {
                   const label = firstWeekDay?.label;
                   return (
                     <th key={i} className="text-left text-[13px] text-neutral-400 p-2.5 min-w-[230px] print:min-w-0 font-medium">
