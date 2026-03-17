@@ -94,4 +94,13 @@
   .pill {
     @apply text-[11px] px-2.5 py-1 rounded-full font-medium;
   }
+
+  /* Animate in */
+  .animate-in {
+    animation: slideIn 0.2s ease-out;
+  }
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateY(-8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
 }

@@ -113,6 +113,22 @@ const translations = {
     select: "Select...",
     optional: "Optional...",
 
+    // Toasts & Modals
+    changesSaved: "Changes saved",
+    clientDeleted: "Client deleted",
+    clientAdded: "Client added",
+    programCreated: "Program created",
+    bookingCreated: "Booking created",
+    bookingCancelled: "Booking cancelled",
+    bookingDeleted: "Booking deleted",
+    deleteClient: "Delete client",
+    deleteClientMsg: "Are you sure? This will delete all programs and bookings for this client.",
+    createFirstProgram: "Create a training program to get started",
+    deleteBooking: "Delete booking",
+    deleteBookingMsg: "Are you sure you want to delete this booking?",
+    today: "Today",
+    yesterday: "Yesterday",
+
     // Login
     personalTrainingMgmt: "Personal training management",
     signInGoogle: "Sign in with Google",
@@ -225,6 +241,22 @@ const translations = {
     next: "Succ",
     select: "Seleziona...",
     optional: "Facoltativo...",
+
+    // Toasts & Modals
+    changesSaved: "Modifiche salvate",
+    clientDeleted: "Cliente eliminato",
+    clientAdded: "Cliente aggiunto",
+    programCreated: "Programma creato",
+    bookingCreated: "Prenotazione creata",
+    bookingCancelled: "Prenotazione annullata",
+    bookingDeleted: "Prenotazione eliminata",
+    deleteClient: "Elimina cliente",
+    deleteClientMsg: "Sei sicuro? Questo eliminerà tutti i programmi e le prenotazioni di questo cliente.",
+    createFirstProgram: "Crea un programma di allenamento per iniziare",
+    deleteBooking: "Elimina prenotazione",
+    deleteBookingMsg: "Sei sicuro di voler eliminare questa prenotazione?",
+    today: "Oggi",
+    yesterday: "Ieri",
 
     // Login
     personalTrainingMgmt: "Gestione allenamento personale",

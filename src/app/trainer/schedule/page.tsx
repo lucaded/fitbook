@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useI18n } from "@/lib/i18n";
+import { useToast } from "@/components/Toast";
+import { ConfirmModal } from "@/components/ConfirmModal";
 
 interface Client { id: string; name: string; }
 interface Booking {
@@ -18,9 +20,12 @@ const TIME_SLOTS = Array.from({ length: 28 }, (_, i) => {
 
 export default function SchedulePage() {
   const { t } = useI18n();
+  const { toast } = useToast();
   const [clients, setClients] = useState<Client[]>([]);
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [showAdd, setShowAdd] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const [creating, setCreating] = useState(false);
   const [weekOffset, setWeekOffset] = useState(0);
   const [form, setForm] = useState({
     clientId: "", date: "", startTime: "09:00", endTime: "10:00", type: "PERSONAL" as string, notes: "",
@@ -55,20 +60,26 @@ export default function SchedulePage() {
 
   const createBooking = async () => {
     if (!form.clientId || !form.date) return;
+    setCreating(true);
     await fetch("/api/bookings", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(form) });
+    setCreating(false);
     setShowAdd(false);
     setForm({ clientId: "", date: "", startTime: "09:00", endTime: "10:00", type: "PERSONAL", notes: "" });
+    toast(t("bookingCreated") || "Booking created");
     loadBookings();
   };
 
   const cancelBooking = async (id: string) => {
     await fetch(`/api/bookings/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ status: "CANCELLED" }) });
     setBookings(bookings.map((b) => b.id === id ? { ...b, status: "CANCELLED" } : b));
+    toast(t("bookingCancelled") || "Booking cancelled", "info");
   };
 
   const deleteBooking = async (id: string) => {
     await fetch(`/api/bookings/${id}`, { method: "DELETE" });
     setBookings(bookings.filter((b) => b.id !== id));
+    setDeleteConfirm(null);
+    toast(t("bookingDeleted") || "Booking deleted", "info");
   };
 
   // Auto-set end time 1h after start
@@ -120,7 +131,7 @@ export default function SchedulePage() {
 
       {/* Booking form */}
       {showAdd && (
-        <div className="card p-5 sm:p-6 mb-6">
+        <div className="card p-5 sm:p-6 mb-6 animate-in">
           <h3 className="text-[15px] font-semibold text-neutral-200 mb-5">{t("newBooking")}</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-4">
             <div>
@@ -162,8 +173,8 @@ export default function SchedulePage() {
             <input type="text" value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })}
               placeholder={t("optional")} className="input-field" />
           </div>
-          <button onClick={createBooking} disabled={!form.clientId || !form.date} className="btn-primary disabled:opacity-40 text-[14px]">
-            {t("createBooking")}
+          <button onClick={createBooking} disabled={!form.clientId || !form.date || creating} className="btn-primary disabled:opacity-40 text-[14px]">
+            {creating ? t("saving") || "Creating..." : t("createBooking")}
           </button>
         </div>
       )}
@@ -221,7 +232,7 @@ export default function SchedulePage() {
                         {b.status !== "CANCELLED" && (
                           <button onClick={() => cancelBooking(b.id)} className="text-[11px] text-neutral-600 hover:text-neutral-400 transition-colors">{t("cancel").toLowerCase()}</button>
                         )}
-                        <button onClick={() => deleteBooking(b.id)} className="text-[11px] text-neutral-600 hover:text-red-400 transition-colors">{t("delete").toLowerCase()}</button>
+                        <button onClick={() => setDeleteConfirm(b.id)} className="text-[11px] text-neutral-600 hover:text-red-400 transition-colors">{t("delete").toLowerCase()}</button>
                       </div>
                     </div>
                   ))}
@@ -266,7 +277,7 @@ export default function SchedulePage() {
                         {b.status !== "CANCELLED" && (
                           <button onClick={(e) => { e.stopPropagation(); cancelBooking(b.id); }} className="text-[9px] opacity-30 hover:opacity-80 underline transition-opacity">{t("cancel").toLowerCase()}</button>
                         )}
-                        <button onClick={(e) => { e.stopPropagation(); deleteBooking(b.id); }} className="text-[9px] opacity-30 hover:opacity-80 text-red-400 underline transition-opacity">{t("delete").toLowerCase()}</button>
+                        <button onClick={(e) => { e.stopPropagation(); setDeleteConfirm(b.id); }} className="text-[9px] opacity-30 hover:opacity-80 text-red-400 underline transition-opacity">{t("delete").toLowerCase()}</button>
                       </div>
                     </div>
                   )) : (
@@ -280,6 +291,18 @@ export default function SchedulePage() {
           </div>
         ))}
       </div>
+
+      {deleteConfirm && (
+        <ConfirmModal
+          title={t("deleteBooking") || "Delete booking"}
+          message={t("deleteBookingMsg") || "Are you sure you want to delete this booking?"}
+          confirmLabel={t("delete")}
+          cancelLabel={t("cancel")}
+          destructive
+          onConfirm={() => deleteBooking(deleteConfirm)}
+          onCancel={() => setDeleteConfirm(null)}
+        />
+      )}
     </div>
   );
 }

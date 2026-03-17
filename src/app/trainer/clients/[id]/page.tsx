@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { useI18n } from "@/lib/i18n";
+import { useToast } from "@/components/Toast";
+import { ConfirmModal } from "@/components/ConfirmModal";
 
 interface ClientDetail {
   id: string;
@@ -42,10 +44,13 @@ export default function ClientDetailPage() {
   const params = useParams();
   const router = useRouter();
   const { t } = useI18n();
+  const { toast } = useToast();
   const [client, setClient] = useState<ClientDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({ name: "", email: "", phone: "", height: "", weight: "", goals: "", injuries: "", notes: "" });
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const [showNewProgram, setShowNewProgram] = useState(false);
   const [progForm, setProgForm] = useState({ name: "", weeks: "8", daysPerWeek: "4" });
@@ -75,11 +80,14 @@ export default function ClientDetailPage() {
   }, [showNewProgram]);
 
   const saveClient = async () => {
+    setSaving(true);
     await fetch(`/api/clients/${params.id}`, {
       method: "PATCH", headers: { "Content-Type": "application/json" },
       body: JSON.stringify(form),
     });
+    setSaving(false);
     setEditing(false);
+    toast(t("changesSaved") || "Changes saved");
     loadClient();
   };
 
@@ -99,18 +107,46 @@ export default function ClientDetailPage() {
     setShowNewProgram(false);
     setProgForm({ name: "", weeks: "8", daysPerWeek: "4" });
     setSelectedTemplate("");
+    toast(t("programCreated") || "Program created");
     loadClient();
   };
 
   const deleteClient = async () => {
-    if (!confirm(t("deleteConfirm"))) return;
     await fetch(`/api/clients/${params.id}`, { method: "DELETE" });
+    toast(t("clientDeleted") || "Client deleted", "info");
     router.push("/trainer/clients");
   };
 
+  const relativeDate = (dateStr: string) => {
+    const d = new Date(dateStr);
+    const now = new Date();
+    const diff = now.getTime() - d.getTime();
+    const days = Math.floor(diff / 86400000);
+    if (days === 0) return t("today") || "Today";
+    if (days === 1) return t("yesterday") || "Yesterday";
+    if (days < 7) return `${days}d ago`;
+    if (days < 30) return `${Math.floor(days / 7)}w ago`;
+    return d.toLocaleDateString();
+  };
+
   if (loading) return (
-    <div className="flex items-center justify-center py-20">
-      <div className="w-5 h-5 border-2 border-neutral-800 border-t-neutral-400 rounded-full animate-spin" />
+    <div className="space-y-6">
+      <div className="h-4 w-32 bg-neutral-800 rounded animate-pulse" />
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="h-6 w-40 bg-neutral-800 rounded animate-pulse" />
+          <div className="w-2.5 h-2.5 rounded-full bg-neutral-800 animate-pulse" />
+        </div>
+        <div className="h-8 w-24 bg-neutral-800 rounded-xl animate-pulse" />
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+        <div className="card p-6 space-y-4">
+          {[1, 2, 3].map((i) => <div key={i} className="h-4 bg-neutral-800 rounded animate-pulse" style={{ width: `${60 + i * 10}%` }} />)}
+        </div>
+        <div className="sm:col-span-2 card p-6 space-y-3">
+          {[1, 2].map((i) => <div key={i} className="h-14 bg-neutral-800 rounded animate-pulse" />)}
+        </div>
+      </div>
     </div>
   );
   if (!client) return <p className="text-red-500 py-8">{t("clientNotFound")}</p>;
@@ -146,11 +182,23 @@ export default function ClientDetailPage() {
           <button onClick={() => setEditing(!editing)} className="btn-ghost text-[13px]">
             {editing ? t("cancel") : t("edit")}
           </button>
-          <button onClick={deleteClient} className="btn-ghost text-[13px] text-neutral-600 hover:text-red-400">
+          <button onClick={() => setShowDeleteConfirm(true)} className="btn-ghost text-[13px] text-neutral-600 hover:text-red-400">
             {t("delete")}
           </button>
         </div>
       </div>
+
+      {showDeleteConfirm && (
+        <ConfirmModal
+          title={t("deleteClient") || "Delete client"}
+          message={t("deleteClientMsg") || `Are you sure you want to delete ${client.name}? This will also delete all their programs and bookings.`}
+          confirmLabel={t("delete")}
+          cancelLabel={t("cancel")}
+          destructive
+          onConfirm={() => { setShowDeleteConfirm(false); deleteClient(); }}
+          onCancel={() => setShowDeleteConfirm(false)}
+        />
+      )}
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-8">
         {/* Client Info */}
@@ -158,7 +206,7 @@ export default function ClientDetailPage() {
           <div className="card p-6">
             <h2 className="section-title mb-5">{t("info")}</h2>
             {editing ? (
-              <div className="space-y-3">
+              <div className="space-y-3 animate-in">
                 <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="input-field" placeholder={t("name")} />
                 <input value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className="input-field" placeholder={t("email")} />
                 <input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className="input-field" placeholder={t("phone")} />
@@ -169,7 +217,9 @@ export default function ClientDetailPage() {
                 <textarea value={form.goals} onChange={(e) => setForm({ ...form, goals: e.target.value })} rows={2} className="input-field" placeholder={t("goals")} />
                 <textarea value={form.injuries} onChange={(e) => setForm({ ...form, injuries: e.target.value })} rows={2} className="input-field" placeholder={t("injuries")} />
                 <textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} rows={2} className="input-field" placeholder={t("notes")} />
-                <button onClick={saveClient} className="btn-primary w-full text-[14px]">{t("save")}</button>
+                <button onClick={saveClient} disabled={saving} className="btn-primary w-full text-[14px] disabled:opacity-40">
+                  {saving ? t("saving") || "Saving..." : t("save")}
+                </button>
               </div>
             ) : (
               <div className="space-y-4 text-[14px]">
@@ -220,7 +270,7 @@ export default function ClientDetailPage() {
           </div>
 
           {showNewProgram && (
-            <div className="card p-6 mb-5">
+            <div className="card p-6 mb-5 animate-in">
               {templates.length > 0 && (
                 <div className="mb-5">
                   <label className="label">{t("startFromTemplate")}</label>
@@ -263,20 +313,29 @@ export default function ClientDetailPage() {
           )}
 
           {client.programs.length === 0 ? (
-            <div className="card px-6 py-12 text-center text-neutral-500 text-[14px]">
-              {t("noProgramsYet")}
+            <div className="card px-6 py-14 text-center">
+              <div className="w-12 h-12 rounded-full bg-[#161616] border border-[#1e1e1e] flex items-center justify-center mx-auto mb-4">
+                <svg className="w-6 h-6 text-neutral-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+              </div>
+              <p className="text-neutral-400 text-[14px] mb-1">{t("noProgramsYet")}</p>
+              <p className="text-[13px] text-neutral-600 mb-4">{t("createFirstProgram") || "Create a training program to get started"}</p>
+              <button onClick={() => setShowNewProgram(true)} className="btn-primary text-[13px] mx-auto">
+                {t("newProgram")}
+              </button>
             </div>
           ) : (
             <div className="card overflow-hidden divide-y divide-[#181818]">
               {client.programs.map((prog) => (
                 <Link key={prog.id}
                   href={`/trainer/clients/${client.id}/programs/${prog.id}`}
-                  className="block px-6 py-5 hover:bg-[#151515] transition-all duration-200 group">
+                  className="block px-5 sm:px-6 py-4 sm:py-5 hover:bg-[#151515] active:bg-[#181818] transition-all duration-200 group">
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-[14px] font-medium text-neutral-200 group-hover:text-white transition-colors">{prog.name}</p>
                       <p className="text-[13px] text-neutral-600 mt-1">
-                        {prog.daysPerWeek} {t("daysPerWeek").toLowerCase()}  ·  {new Date(prog.createdAt).toLocaleDateString()}
+                        {prog.daysPerWeek} {t("daysPerWeek").toLowerCase()}  ·  {relativeDate(prog.createdAt)}
                       </p>
                     </div>
                     <div className="flex items-center gap-4">
