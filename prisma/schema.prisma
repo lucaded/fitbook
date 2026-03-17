@@ -142,6 +142,7 @@ model ProgramDay {
   weekId    String
   dayNumber Int
   label     String?  // e.g., "Upper A", "Lower B"
+  notes     String?  @db.Text // trainer day notes, e.g. "Focus on form", "Deload week"
 
   week      ProgramWeek        @relation(fields: [weekId], references: [id], onDelete: Cascade)
   exercises ProgramExercise[]

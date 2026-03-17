@@ -93,7 +93,11 @@ const translations = {
     actuals: "Actuals",
     apply: "Apply",
     clickToAdd: "+ Click to add exercises",
+    dayNotes: "Day Notes",
+    addNote: "Add note",
     programNotFound: "Program not found",
+    duplicate: "Duplicate",
+    duplicating: "Duplicating...",
 
     // Schedule
     scheduleSub: "Weekly calendar for training sessions.",
@@ -224,7 +228,11 @@ const translations = {
     actuals: "Effettivi",
     apply: "Applica",
     clickToAdd: "+ Clicca per aggiungere esercizi",
+    dayNotes: "Note del Giorno",
+    addNote: "Aggiungi nota",
     programNotFound: "Programma non trovato",
+    duplicate: "Duplica",
+    duplicating: "Duplicazione...",
 
     // Schedule
     scheduleSub: "Calendario settimanale per le sessioni di allenamento.",

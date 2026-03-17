@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback, useRef } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceDot,
@@ -19,7 +19,7 @@ interface ProgramExercise {
   rpe: number | null; notes: string | null;
   actualSets: number | null; actualReps: number | null; actualLoadKg: number | null;
 }
-interface ProgramDay { id: string; dayNumber: number; label: string | null; exercises: ProgramExercise[]; }
+interface ProgramDay { id: string; dayNumber: number; label: string | null; notes: string | null; exercises: ProgramExercise[]; }
 interface ProgramWeek { id: string; weekNumber: number; days: ProgramDay[]; }
 interface Program {
   id: string; name: string; daysPerWeek: number; progressionIncrement: number;
@@ -31,7 +31,9 @@ type SaveStatus = "idle" | "saving" | "saved";
 
 export default function ProgramEditorPage() {
   const params = useParams();
+  const router = useRouter();
   const { t } = useI18n();
+  const [duplicating, setDuplicating] = useState(false);
   const [program, setProgram] = useState<Program | null>(null);
   const [loading, setLoading] = useState(true);
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
@@ -42,6 +44,7 @@ export default function ProgramEditorPage() {
   const [rpeTable, setRpeTable] = useState<Record<number, number[]>>({ ...DEFAULT_RPE_TABLE });
   const [view, setView] = useState<"table" | "summary" | "charts">("table");
   const [editingLabel, setEditingLabel] = useState<{ dayId: string; value: string } | null>(null);
+  const [editingNote, setEditingNote] = useState<{ dayId: string; value: string } | null>(null);
   const saveTimer = useRef<NodeJS.Timeout>(undefined);
 
   const loadProgram = useCallback(() => {
@@ -89,6 +92,13 @@ export default function ProgramEditorPage() {
     await fetch(`/api/programs/${program!.id}/day-label`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ dayId, label }) });
     if (program) { const prog = { ...program }; for (const week of prog.weeks) for (const day of week.days) if (day.id === dayId) day.label = label || null; setProgram(prog); }
     setEditingLabel(null); markSaved();
+  };
+
+  const saveDayNotes = async (dayId: string, notes: string) => {
+    markSaving();
+    await fetch(`/api/programs/${program!.id}/day-label`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ dayId, notes }) });
+    if (program) { const prog = { ...program }; for (const week of prog.weeks) for (const day of week.days) if (day.id === dayId) day.notes = notes || null; setProgram(prog); }
+    setEditingNote(null); markSaved();
   };
 
   const addDay = async () => { if (!program) return; markSaving(); await fetch(`/api/programs/${program.id}/days`, { method: "POST" }); markSaved(); loadProgram(); };
@@ -146,6 +156,23 @@ export default function ProgramEditorPage() {
     await fetch(`/api/programs/${program.id}/exercises?exerciseId=${ex.id}`, { method: "DELETE" });
   };
 
+  const [dragInfo, setDragInfo] = useState<{ week: number; day: number; fromIdx: number } | null>(null);
+
+  const reorderExercise = async (weekIdx: number, dayIdx: number, fromIdx: number, toIdx: number) => {
+    if (!program || fromIdx === toIdx) return;
+    const prog = { ...program }; prog.weeks = [...prog.weeks]; prog.weeks[weekIdx] = { ...prog.weeks[weekIdx] };
+    prog.weeks[weekIdx].days = [...prog.weeks[weekIdx].days];
+    const day = { ...prog.weeks[weekIdx].days[dayIdx] };
+    const exercises = [...day.exercises];
+    const [moved] = exercises.splice(fromIdx, 1);
+    exercises.splice(toIdx, 0, moved);
+    day.exercises = exercises.map((e, i) => ({ ...e, order: i }));
+    prog.weeks[weekIdx].days[dayIdx] = day;
+    setProgram(prog);
+    await fetch(`/api/programs/${program.id}/reorder-exercises`, { method: "PATCH", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ dayId: day.id, exerciseIds: day.exercises.map((e) => e.id) }) });
+  };
+
   const getSuggestion = (weekIdx: number, dayIdx: number, exerciseId: string) => {
     if (!program || weekIdx === 0) return null;
     const prevDay = program.weeks[weekIdx - 1]?.days[dayIdx]; if (!prevDay) return null;
@@ -174,6 +201,18 @@ export default function ProgramEditorPage() {
 
   const addCustomExercise = (name: string) => {
     if (activeCell) addExercise(activeCell.week, activeCell.day, { id: `custom-${Date.now()}`, name, category: "custom", muscleGroups: [], defaults: { sets: 3, reps: 10 } });
+  };
+
+  const duplicateProgram = async () => {
+    if (!program || duplicating) return;
+    setDuplicating(true);
+    try {
+      const res = await fetch(`/api/programs/${program.id}/duplicate`, { method: "POST" });
+      const data = await res.json();
+      if (data.id) router.push(`/trainer/clients/${program.client.id}/programs/${data.id}`);
+    } finally {
+      setDuplicating(false);
+    }
   };
 
   // Format exercise summary — clean, no @ symbol
@@ -229,6 +268,13 @@ export default function ProgramEditorPage() {
         <div>
           <div className="flex items-center gap-3 sm:gap-4 flex-wrap">
             <h1 className="text-lg sm:text-xl font-bold tracking-tight print:text-base">{program.name}</h1>
+            <button
+              onClick={duplicateProgram}
+              disabled={duplicating}
+              className="text-[12px] sm:text-[13px] px-2.5 py-1 rounded-md bg-neutral-800 hover:bg-neutral-700 text-neutral-300 transition-colors disabled:opacity-50 print:hidden"
+            >
+              {duplicating ? t("duplicating") : t("duplicate")}
+            </button>
             <span className="text-[13px] sm:text-[14px] text-neutral-500">{program.client.name}</span>
             {saveStatus === "saving" && (
               <span className="flex items-center gap-1.5 text-[12px] text-amber-500/70">
@@ -391,7 +437,28 @@ export default function ProgramEditorPage() {
                   return (
                     <div key={day.id}
                       className={`px-4 py-3 border-b border-[#111] last:border-b-0 ${dayComplete ? "bg-emerald-950/5" : ""}`}>
-                      <p className="text-[12px] text-neutral-500 font-medium mb-2">{dayLabel}</p>
+                      <p className="text-[12px] text-neutral-500 font-medium mb-1">{dayLabel}</p>
+                      {/* Day notes */}
+                      <div className="mb-2">
+                        {editingNote?.dayId === day.id ? (
+                          <input type="text" autoFocus value={editingNote.value}
+                            onChange={(e) => setEditingNote({ ...editingNote, value: e.target.value })}
+                            onBlur={() => saveDayNotes(day.id, editingNote.value)}
+                            onKeyDown={(e) => { if (e.key === "Enter") saveDayNotes(day.id, editingNote.value); }}
+                            placeholder={t("dayNotes")}
+                            className="w-full bg-[#111] border border-bordeaux-700/50 rounded-lg px-2.5 py-1 text-[11px] text-neutral-300 focus:outline-none" />
+                        ) : day.notes ? (
+                          <p className="text-[11px] text-neutral-600 italic cursor-pointer hover:text-neutral-400 transition-colors"
+                            onClick={() => setEditingNote({ dayId: day.id, value: day.notes || "" })}>
+                            {day.notes}
+                          </p>
+                        ) : (
+                          <button onClick={() => setEditingNote({ dayId: day.id, value: "" })}
+                            className="text-[10px] text-neutral-700 hover:text-neutral-500 transition-colors">
+                            + {t("addNote")}
+                          </button>
+                        )}
+                      </div>
                       {/* Exercise cards */}
                       <div className="space-y-1.5">
                         {day.exercises.map((ex, eIdx) => {
@@ -400,14 +467,23 @@ export default function ProgramEditorPage() {
                           const hasActuals = ex.actualSets !== null;
                           const isExActive = activeCell?.week === wIdx && activeCell?.day === dIdx && activeCell?.exercise === eIdx;
                           return (
-                            <div key={ex.id} className={`rounded-xl px-3 py-2.5 transition-all duration-200 cursor-pointer ${
+                            <div key={ex.id}
+                              draggable
+                              onDragStart={(e) => { e.dataTransfer.effectAllowed = "move"; setDragInfo({ week: wIdx, day: dIdx, fromIdx: eIdx }); }}
+                              onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = "move"; }}
+                              onDrop={(e) => { e.preventDefault(); if (dragInfo && dragInfo.week === wIdx && dragInfo.day === dIdx) reorderExercise(wIdx, dIdx, dragInfo.fromIdx, eIdx); setDragInfo(null); }}
+                              onDragEnd={() => setDragInfo(null)}
+                              className={`rounded-xl px-3 py-2.5 transition-all duration-200 cursor-pointer ${
                               hasActuals ? "bg-emerald-500/[0.04] border border-emerald-500/10" : "bg-[#111] border border-[#181818]"
-                            } ${isExActive ? "ring-1 ring-bordeaux-700/30" : ""}`}
+                            } ${isExActive ? "ring-1 ring-bordeaux-700/30" : ""} ${dragInfo?.week === wIdx && dragInfo?.day === dIdx && dragInfo?.fromIdx === eIdx ? "opacity-50" : ""}`}
                               onClick={() => setActiveCell(isExActive ? null : { week: wIdx, day: dIdx, exercise: eIdx })}>
                               <div className="flex items-start justify-between gap-2">
-                                <div className="min-w-0">
-                                  <span className="text-[14px] font-semibold text-white block">{ex.exerciseName}</span>
-                                  <span className="text-[13px] text-neutral-500 tabular-nums mt-0.5 block">{formatExSummary(ex)}</span>
+                                <div className="flex items-start gap-2 min-w-0">
+                                  <span className="text-neutral-700 cursor-grab active:cursor-grabbing mt-0.5 select-none" onMouseDown={(e) => e.stopPropagation()}>⠿</span>
+                                  <div className="min-w-0">
+                                    <span className="text-[14px] font-semibold text-white block">{ex.exerciseName}</span>
+                                    <span className="text-[13px] text-neutral-500 tabular-nums mt-0.5 block">{formatExSummary(ex)}</span>
+                                  </div>
                                 </div>
                                 <button onClick={(e) => { e.stopPropagation(); removeExercise(wIdx, dIdx, eIdx); }}
                                   className="text-neutral-700 hover:text-red-400 text-[16px] transition-colors leading-none mt-0.5 shrink-0 p-1">×</button>
@@ -566,6 +642,27 @@ export default function ProgramEditorPage() {
                             title={t("removeDay")}>×</button>
                         )}
                       </div>
+                      {/* Day notes */}
+                      <div className="mt-1 print:hidden">
+                        {editingNote?.dayId === firstWeekDay?.id ? (
+                          <input type="text" autoFocus value={editingNote.value}
+                            onChange={(e) => setEditingNote({ ...editingNote, value: e.target.value })}
+                            onBlur={() => saveDayNotes(firstWeekDay.id, editingNote.value)}
+                            onKeyDown={(e) => { if (e.key === "Enter") saveDayNotes(firstWeekDay.id, editingNote.value); }}
+                            placeholder={t("dayNotes")}
+                            className="bg-[#111] border border-bordeaux-700/50 rounded-lg px-2.5 py-1 text-[11px] text-neutral-300 focus:outline-none w-full font-normal" />
+                        ) : firstWeekDay?.notes ? (
+                          <p className="text-[11px] text-neutral-600 font-normal italic cursor-pointer hover:text-neutral-400 transition-colors"
+                            onClick={() => setEditingNote({ dayId: firstWeekDay?.id || "", value: firstWeekDay.notes || "" })}>
+                            {firstWeekDay.notes}
+                          </p>
+                        ) : (
+                          <button onClick={() => setEditingNote({ dayId: firstWeekDay?.id || "", value: "" })}
+                            className="text-[10px] text-neutral-700 hover:text-neutral-500 font-normal transition-colors">
+                            + {t("addNote")}
+                          </button>
+                        )}
+                      </div>
                     </th>
                   );
                 })}
@@ -595,25 +692,35 @@ export default function ProgramEditorPage() {
                       const dayComplete = day.exercises.length > 0 && day.exercises.every((e) => e.actualSets !== null);
                       return (
                         <td key={day.id}
-                          className={`p-2 border-l border-[#111] cursor-pointer transition-all duration-200 ${isActive ? "bg-[#0f0f0f]" : "hover:bg-[#0d0d0d]"} ${dayComplete ? "bg-emerald-950/5" : ""}`}
-                          onClick={() => { setActiveCell(isActive ? null : { week: wIdx, day: dIdx }); setShowSearch(false); setSearchQuery(""); }}>
+                          className={`p-2 border-l border-[#111] transition-all duration-200 ${isActive ? "bg-[#0f0f0f]" : ""} ${dayComplete ? "bg-emerald-950/5" : ""}`}>
 
                           <div className="space-y-1.5">
                             {day.exercises.map((ex, eIdx) => {
                               const oneRM = program.oneRMs[ex.exerciseId] || 0;
                               const suggestion = getSuggestion(wIdx, dIdx, ex.exerciseId);
                               const hasActuals = ex.actualSets !== null;
+                              const isExActive = activeCell?.week === wIdx && activeCell?.day === dIdx && activeCell?.exercise === eIdx;
                               return (
-                                <div key={ex.id} className={`rounded-xl px-3 py-2.5 transition-all duration-200 group/ex ${
+                                <div key={ex.id}
+                                  draggable
+                                  onDragStart={(e) => { e.dataTransfer.effectAllowed = "move"; setDragInfo({ week: wIdx, day: dIdx, fromIdx: eIdx }); }}
+                                  onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = "move"; }}
+                                  onDrop={(e) => { e.preventDefault(); if (dragInfo && dragInfo.week === wIdx && dragInfo.day === dIdx) reorderExercise(wIdx, dIdx, dragInfo.fromIdx, eIdx); setDragInfo(null); }}
+                                  onDragEnd={() => setDragInfo(null)}
+                                  onClick={() => { setActiveCell(isExActive ? null : { week: wIdx, day: dIdx, exercise: eIdx }); setShowSearch(false); setSearchQuery(""); }}
+                                  className={`rounded-xl px-3 py-2.5 transition-all duration-200 group/ex cursor-pointer ${
                                   hasActuals ? "bg-emerald-500/[0.04] border border-emerald-500/10" : "bg-[#111] border border-[#181818]"
-                                }`}>
+                                } ${isExActive ? "ring-1 ring-bordeaux-700/40" : "hover:bg-[#161616]"} ${dragInfo?.week === wIdx && dragInfo?.day === dIdx && dragInfo?.fromIdx === eIdx ? "opacity-50" : ""}`}>
                                   {/* Row 1: Name + clean summary */}
                                   <div className="flex items-start justify-between gap-2">
-                                    <div className="min-w-0">
-                                      <span className="text-[14px] font-semibold text-white block">{ex.exerciseName}</span>
-                                      <span className="text-[13px] text-neutral-500 tabular-nums mt-0.5 block">
-                                        {formatExSummary(ex)}
-                                      </span>
+                                    <div className="flex items-start gap-2 min-w-0">
+                                      <span className="text-neutral-700 hover:text-neutral-500 cursor-grab active:cursor-grabbing mt-0.5 select-none opacity-0 group-hover/ex:opacity-100 transition-opacity print:hidden" onMouseDown={(e) => e.stopPropagation()}>⠿</span>
+                                      <div className="min-w-0">
+                                        <span className="text-[14px] font-semibold text-white block">{ex.exerciseName}</span>
+                                        <span className="text-[13px] text-neutral-500 tabular-nums mt-0.5 block">
+                                          {formatExSummary(ex)}
+                                        </span>
+                                      </div>
                                     </div>
                                     <button onClick={(e) => { e.stopPropagation(); removeExercise(wIdx, dIdx, eIdx); }}
                                       className="text-neutral-800 hover:text-red-400 text-[13px] transition-colors leading-none opacity-0 group-hover/ex:opacity-100 print:hidden mt-0.5 shrink-0">×</button>
@@ -628,7 +735,7 @@ export default function ProgramEditorPage() {
                                   )}
 
                                   {/* Row 2: Editable fields */}
-                                  {isActive && (
+                                  {isExActive && (
                                     <div className="mt-3 print:hidden" onClick={(e) => e.stopPropagation()}>
                                       <div className="grid grid-cols-4 gap-1.5 text-[12px]">
                                         {[
@@ -693,60 +800,52 @@ export default function ProgramEditorPage() {
                             })}
                           </div>
 
-                          {/* Actions */}
-                          {isActive && (
-                            <div className="mt-2.5 space-y-1.5 print:hidden" onClick={(e) => e.stopPropagation()}>
-                              {!showSearch ? (
-                                <div className="flex gap-2">
-                                  <button onClick={() => setShowSearch(true)}
-                                    className="flex-1 text-[12px] text-neutral-600 hover:text-neutral-300 border border-dashed border-[#1c1c1c] hover:border-[#303030] rounded-xl py-2 transition-all duration-200">
-                                    {t("addExercise")}
+                          {/* Add exercise — always visible */}
+                          <div className="mt-2.5 space-y-1.5 print:hidden">
+                            {!(isActive && showSearch) ? (
+                              <div className="flex gap-2">
+                                <button onClick={() => { setActiveCell({ week: wIdx, day: dIdx }); setShowSearch(true); setSearchQuery(""); }}
+                                  className="flex-1 text-[12px] text-neutral-600 hover:text-neutral-300 border border-dashed border-[#1c1c1c] hover:border-[#303030] rounded-xl py-2 transition-all duration-200">
+                                  {day.exercises.length === 0 ? t("clickToAdd") : t("addExercise")}
+                                </button>
+                                {day.exercises.length > 0 && !dayComplete && (
+                                  <button onClick={() => completeDay(day.id)}
+                                    className="text-[11px] bg-emerald-500/[0.06] text-emerald-500/70 border border-emerald-500/10 rounded-xl px-3.5 py-2 hover:bg-emerald-500/10 transition-all duration-200">
+                                    {t("complete")}
                                   </button>
-                                  {day.exercises.length > 0 && !dayComplete && (
-                                    <button onClick={() => completeDay(day.id)}
-                                      className="text-[11px] bg-emerald-500/[0.06] text-emerald-500/70 border border-emerald-500/10 rounded-xl px-3.5 py-2 hover:bg-emerald-500/10 transition-all duration-200">
-                                      {t("complete")}
+                                )}
+                              </div>
+                            ) : (
+                              <div className="space-y-1.5" onClick={(e) => e.stopPropagation()}>
+                                <input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
+                                  placeholder={t("searchExercises")} autoFocus className="input-field text-[13px] py-2" />
+                                <div className="max-h-48 overflow-y-auto card divide-y divide-[#181818]">
+                                  {filtered.slice(0, 15).map((ex) => (
+                                    <button key={ex.id} onClick={() => addExercise(wIdx, dIdx, ex)}
+                                      className="w-full text-left px-3 py-2.5 hover:bg-[#161616] flex justify-between items-center text-[13px] transition-colors">
+                                      <div className="min-w-0">
+                                        <span className="text-neutral-300">{ex.name}</span>
+                                        {ex.defaults && (
+                                          <span className="text-[11px] text-neutral-600 ml-2 tabular-nums">
+                                            {ex.defaults.sets}×{ex.defaults.reps}{ex.defaults.rpe ? ` RPE ${ex.defaults.rpe}` : ""}
+                                          </span>
+                                        )}
+                                      </div>
+                                      <span className="text-[10px] text-neutral-600 uppercase tracking-wider shrink-0 ml-2">{catLabel[ex.category]}</span>
+                                    </button>
+                                  ))}
+                                  {filtered.length === 0 && searchQuery && (
+                                    <button onClick={() => addCustomExercise(searchQuery)}
+                                      className="w-full text-left px-3 py-2.5 hover:bg-[#161616] text-[13px] text-bordeaux-400">
+                                      + {t("addAsCustom")} &quot;{searchQuery}&quot;
                                     </button>
                                   )}
                                 </div>
-                              ) : (
-                                <div className="space-y-1.5">
-                                  <input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
-                                    placeholder={t("searchExercises")} autoFocus className="input-field text-[13px] py-2" />
-                                  <div className="max-h-48 overflow-y-auto card divide-y divide-[#181818]">
-                                    {filtered.slice(0, 15).map((ex) => (
-                                      <button key={ex.id} onClick={() => addExercise(wIdx, dIdx, ex)}
-                                        className="w-full text-left px-3 py-2.5 hover:bg-[#161616] flex justify-between items-center text-[13px] transition-colors">
-                                        <div className="min-w-0">
-                                          <span className="text-neutral-300">{ex.name}</span>
-                                          {ex.defaults && (
-                                            <span className="text-[11px] text-neutral-600 ml-2 tabular-nums">
-                                              {ex.defaults.sets}×{ex.defaults.reps}{ex.defaults.rpe ? ` RPE ${ex.defaults.rpe}` : ""}
-                                            </span>
-                                          )}
-                                        </div>
-                                        <span className="text-[10px] text-neutral-600 uppercase tracking-wider shrink-0 ml-2">{catLabel[ex.category]}</span>
-                                      </button>
-                                    ))}
-                                    {filtered.length === 0 && searchQuery && (
-                                      <button onClick={() => addCustomExercise(searchQuery)}
-                                        className="w-full text-left px-3 py-2.5 hover:bg-[#161616] text-[13px] text-bordeaux-400">
-                                        + {t("addAsCustom")} &quot;{searchQuery}&quot;
-                                      </button>
-                                    )}
-                                  </div>
-                                  <button onClick={() => { setShowSearch(false); setSearchQuery(""); }}
-                                    className="text-[11px] text-neutral-700 hover:text-neutral-500 transition-colors">{t("cancel")}</button>
-                                </div>
-                              )}
-                            </div>
-                          )}
-
-                          {day.exercises.length === 0 && !isActive && (
-                            <div className="text-[12px] text-neutral-700 py-5 text-center border border-dashed border-[#181818] rounded-xl">
-                              {t("clickToAdd")}
-                            </div>
-                          )}
+                                <button onClick={() => { setShowSearch(false); setSearchQuery(""); setActiveCell(null); }}
+                                  className="text-[11px] text-neutral-700 hover:text-neutral-500 transition-colors">{t("cancel")}</button>
+                              </div>
+                            )}
+                          </div>
                         </td>
                       );
                     })}
