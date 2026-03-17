@@ -102,14 +102,16 @@ export default function ProgramEditorPage() {
   };
 
   const addDay = async () => { if (!program) return; markSaving(); await fetch(`/api/programs/${program.id}/days`, { method: "POST" }); markSaved(); loadProgram(); };
-  const [showRemoveDayConfirm, setShowRemoveDayConfirm] = useState(false);
-  const removeDay = () => {
+  const [removeDayTarget, setRemoveDayTarget] = useState<{ dayNumber: number; label: string } | null>(null);
+  const removeDay = (dayNumber: number, label: string) => {
     if (!program || program.daysPerWeek <= 1) return;
-    setShowRemoveDayConfirm(true);
+    setRemoveDayTarget({ dayNumber, label });
   };
   const confirmRemoveDay = async () => {
-    setShowRemoveDayConfirm(false);
-    markSaving(); await fetch(`/api/programs/${program!.id}/days`, { method: "DELETE" }); markSaved(); loadProgram();
+    if (!removeDayTarget) return;
+    const dn = removeDayTarget.dayNumber;
+    setRemoveDayTarget(null);
+    markSaving(); await fetch(`/api/programs/${program!.id}/days?dayNumber=${dn}`, { method: "DELETE" }); markSaved(); loadProgram();
   };
 
   const addExercise = async (weekIdx: number, dayIdx: number, libEx: LibraryExercise) => {
@@ -293,7 +295,6 @@ export default function ProgramEditorPage() {
         </div>
         <div className="flex items-center gap-1.5 print:hidden flex-wrap">
           <button onClick={addDay} className="text-[13px] font-medium text-bordeaux-400 hover:text-bordeaux-300 bg-bordeaux-500/[0.08] hover:bg-bordeaux-500/[0.14] px-3.5 py-1.5 rounded-full transition-all duration-200">{t("addDay")}</button>
-          {(program.weeks[0]?.days.length || 0) > 1 && <button onClick={removeDay} className="text-[13px] text-neutral-600 hover:text-neutral-400 px-3 py-1.5 rounded-full transition-colors">{t("removeDay")}</button>}
           <div className="w-px h-5 bg-[#1e1e1e] mx-1 hidden sm:block" />
           <div className="flex bg-[#111] rounded-full p-0.5 border border-[#1c1c1c]">
             {(["table", "summary", "charts"] as const).map((v) => (
@@ -437,7 +438,13 @@ export default function ProgramEditorPage() {
                   return (
                     <div key={day.id}
                       className={`px-4 py-3 border-b border-[#111] last:border-b-0 ${dayComplete ? "bg-emerald-950/5" : ""}`}>
-                      <p className="text-[12px] text-neutral-500 font-medium mb-1">{dayLabel}</p>
+                      <div className="flex items-center justify-between mb-1">
+                        <p className="text-[12px] text-neutral-500 font-medium">{dayLabel}</p>
+                        {(program.weeks[0]?.days.length || 0) > 1 && (
+                          <button onClick={() => removeDay(day.dayNumber, dayLabel)}
+                            className="text-neutral-800 hover:text-red-400 text-[13px] transition-colors px-1">×</button>
+                        )}
+                      </div>
                       {/* Day notes */}
                       <div className="mb-2">
                         {editingNote?.dayId === day.id ? (
@@ -636,8 +643,8 @@ export default function ProgramEditorPage() {
                             <span className="text-neutral-700 ml-2 text-[10px] opacity-0 group-hover/label:opacity-100 transition-opacity">edit</span>
                           </span>
                         )}
-                        {isLast && (program.weeks[0]?.days.length || 0) > 1 && (
-                          <button onClick={removeDay}
+                        {(program.weeks[0]?.days.length || 0) > 1 && (
+                          <button onClick={() => removeDay(firstWeekDay.dayNumber, label || `Day ${i + 1}`)}
                             className="text-neutral-800 hover:text-red-400 text-[11px] transition-colors opacity-0 group-hover/dayheader:opacity-100 print:hidden px-1"
                             title={t("removeDay")}>×</button>
                         )}
@@ -857,15 +864,15 @@ export default function ProgramEditorPage() {
           </table>
         </div>
       )}
-      {showRemoveDayConfirm && (
+      {removeDayTarget && (
         <ConfirmModal
           title={t("removeDay")}
-          message={t("removeDayConfirm").replace("{n}", String(program.weeks[0]?.days.length || 0))}
+          message={t("removeDayConfirm").replace("{n}", removeDayTarget.label)}
           confirmLabel={t("delete")}
           cancelLabel={t("cancel")}
           destructive
           onConfirm={confirmRemoveDay}
-          onCancel={() => setShowRemoveDayConfirm(false)}
+          onCancel={() => setRemoveDayTarget(null)}
         />
       )}
     </div>
