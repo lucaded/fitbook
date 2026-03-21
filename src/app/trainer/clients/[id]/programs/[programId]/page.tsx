@@ -18,6 +18,7 @@ interface ProgramExercise {
   sets: number; reps: number; intensityPercent: number | null; loadKg: number | null;
   rpe: number | null; notes: string | null;
   actualSets: number | null; actualReps: number | null; actualLoadKg: number | null;
+  actualRpe: number | null; clientNotes: string | null; repDurationSec: number | null;
 }
 interface ProgramDay { id: string; dayNumber: number; label: string | null; notes: string | null; exercises: ProgramExercise[]; }
 interface ProgramWeek { id: string; weekNumber: number; days: ProgramDay[]; }
@@ -28,6 +29,35 @@ interface Program {
 }
 
 type SaveStatus = "idle" | "saving" | "saved";
+
+/* ── Velocity sparkline (load/speed ratio over weeks) ── */
+function VelocitySparkline({ dataPoints, label }: { dataPoints: { week: number; value: number }[]; label: string }) {
+  if (dataPoints.length < 2) return null;
+  const max = Math.max(...dataPoints.map(d => d.value));
+  const min = Math.min(...dataPoints.map(d => d.value));
+  const range = max - min || 1;
+  return (
+    <div className="mt-2">
+      <p className="text-[11px] text-neutral-600 mb-1">{label}</p>
+      <div className="flex items-end gap-[3px] h-8">
+        {dataPoints.map((dp, i) => {
+          const pct = ((dp.value - min) / range) * 100;
+          const height = Math.max(pct, 12);
+          const isLast = i === dataPoints.length - 1;
+          const improving = i > 0 ? dp.value > dataPoints[i - 1].value : false;
+          return (
+            <div key={dp.week} className="relative group flex items-end" style={{ height: "100%" }}>
+              <div className={`w-[6px] rounded-sm transition-all ${isLast ? "bg-emerald-500" : improving ? "bg-emerald-700/60" : "bg-neutral-700"}`} style={{ height: `${height}%` }} />
+              <div className="absolute -top-5 left-1/2 -translate-x-1/2 bg-neutral-800 text-[10px] text-neutral-300 px-1 rounded opacity-0 group-hover:opacity-100 whitespace-nowrap pointer-events-none z-10">
+                W{dp.week}: {dp.value.toFixed(1)}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
 
 export default function ProgramEditorPage() {
   const params = useParams();
@@ -185,7 +215,7 @@ export default function ProgramEditorPage() {
     prog.weeks[weekIdx].days[dayIdx] = { ...prog.weeks[weekIdx].days[dayIdx], exercises: prog.weeks[weekIdx].days[dayIdx].exercises.map((e, i) => i === exIdx ? updated : e) };
     setProgram(prog); markSaving();
     await fetch(`/api/programs/${program.id}/exercises`, { method: "PATCH", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id: ex.id, sets: updated.sets, reps: updated.reps, intensityPercent: updated.intensityPercent, loadKg: updated.loadKg, rpe: updated.rpe, notes: updated.notes, variant: updated.variant, actualSets: updated.actualSets, actualReps: updated.actualReps, actualLoadKg: updated.actualLoadKg }) });
+      body: JSON.stringify({ id: ex.id, sets: updated.sets, reps: updated.reps, intensityPercent: updated.intensityPercent, loadKg: updated.loadKg, rpe: updated.rpe, notes: updated.notes, variant: updated.variant, actualSets: updated.actualSets, actualReps: updated.actualReps, actualLoadKg: updated.actualLoadKg, actualRpe: updated.actualRpe, repDurationSec: updated.repDurationSec }) });
     markSaved();
   };
 
@@ -265,6 +295,23 @@ export default function ProgramEditorPage() {
     else if (ex.intensityPercent) parts.push(`${Math.round(ex.intensityPercent)}%`);
     if (ex.rpe) parts.push(`RPE ${Math.round(ex.rpe * 2) / 2}`);
     return parts.join("  \u2022  ");
+  };
+
+  /* Build velocity data for an exercise across weeks */
+  const getVelocityData = (exerciseId: string) => {
+    if (!program) return [];
+    const points: { week: number; value: number }[] = [];
+    for (const week of program.weeks) {
+      for (const day of week.days) {
+        for (const ex of day.exercises) {
+          if (ex.exerciseId === exerciseId && ex.repDurationSec && ex.repDurationSec > 0) {
+            const load = ex.actualLoadKg ?? ex.loadKg ?? 0;
+            if (load > 0) points.push({ week: week.weekNumber, value: Math.round((load / ex.repDurationSec) * 100) / 100 });
+          }
+        }
+      }
+    }
+    return points;
   };
 
   const allExercises = EXERCISE_LIBRARY;
@@ -689,6 +736,24 @@ export default function ProgramEditorPage() {
                                         </div>
                                       ))}
                                     </div>
+                                    <div className="grid grid-cols-3 gap-1.5 text-[12px] mt-1.5">
+                                      <div>
+                                        <label className="text-[10px] text-neutral-600 mb-0.5 block">RPE</label>
+                                        <input type="number" step="0.5" min="1" max="10" value={ex.actualRpe ?? ""} placeholder="—"
+                                          onChange={(e) => updateExercise(wIdx, dIdx, eIdx, { actualRpe: e.target.value ? parseFloat(e.target.value) : null } as any)}
+                                          className="w-full bg-[#0a0a0a] border border-[#1c1c1c] rounded-lg px-1.5 py-1.5 text-neutral-200 placeholder-neutral-700 focus:border-bordeaux-700/60 focus:outline-none text-center tabular-nums" />
+                                      </div>
+                                      <div>
+                                        <label className="text-[10px] text-neutral-600 mb-0.5 block">Speed (s)</label>
+                                        <input type="number" step="0.1" min="0" value={ex.repDurationSec ?? ""} placeholder="—"
+                                          onChange={(e) => updateExercise(wIdx, dIdx, eIdx, { repDurationSec: e.target.value ? parseFloat(e.target.value) : null } as any)}
+                                          className="w-full bg-[#0a0a0a] border border-[#1c1c1c] rounded-lg px-1.5 py-1.5 text-neutral-200 placeholder-neutral-700 focus:border-bordeaux-700/60 focus:outline-none text-center tabular-nums" />
+                                      </div>
+                                      <div className="flex items-end">
+                                        {ex.clientNotes && <p className="text-[10px] text-neutral-500 italic truncate pb-1.5" title={ex.clientNotes}>Client: {ex.clientNotes}</p>}
+                                      </div>
+                                    </div>
+                                    {(() => { const vd = getVelocityData(ex.exerciseId); return vd.length >= 2 ? <VelocitySparkline dataPoints={vd} label="Velocity (kg/s)" /> : null; })()}
                                   </div>
                                   <div className="flex items-center gap-3 mt-2.5 text-[11px]">
                                     <button onClick={(e) => { e.stopPropagation(); copyExerciseToAllWeeks(ex, day.dayNumber); }}
@@ -935,6 +1000,24 @@ export default function ProgramEditorPage() {
                                             </div>
                                           ))}
                                         </div>
+                                        <div className="grid grid-cols-3 gap-1.5 text-[12px] mt-1.5">
+                                          <div>
+                                            <label className="text-[10px] text-neutral-600 mb-0.5 block">RPE</label>
+                                            <input type="number" step="0.5" min="1" max="10" value={ex.actualRpe ?? ""} placeholder="—"
+                                              onChange={(e) => updateExercise(wIdx, dIdx, eIdx, { actualRpe: e.target.value ? parseFloat(e.target.value) : null } as any)}
+                                              className="w-full bg-[#0a0a0a] border border-[#1c1c1c] rounded-lg px-1.5 py-1 text-neutral-200 placeholder-neutral-700 focus:border-bordeaux-700/60 focus:outline-none text-center tabular-nums" />
+                                          </div>
+                                          <div>
+                                            <label className="text-[10px] text-neutral-600 mb-0.5 block">Speed (s)</label>
+                                            <input type="number" step="0.1" min="0" value={ex.repDurationSec ?? ""} placeholder="—"
+                                              onChange={(e) => updateExercise(wIdx, dIdx, eIdx, { repDurationSec: e.target.value ? parseFloat(e.target.value) : null } as any)}
+                                              className="w-full bg-[#0a0a0a] border border-[#1c1c1c] rounded-lg px-1.5 py-1 text-neutral-200 placeholder-neutral-700 focus:border-bordeaux-700/60 focus:outline-none text-center tabular-nums" />
+                                          </div>
+                                          <div className="flex items-end">
+                                            {ex.clientNotes && <p className="text-[10px] text-neutral-500 italic truncate pb-1" title={ex.clientNotes}>Client: {ex.clientNotes}</p>}
+                                          </div>
+                                        </div>
+                                        {(() => { const vd = getVelocityData(ex.exerciseId); return vd.length >= 2 ? <VelocitySparkline dataPoints={vd} label="Velocity (kg/s)" /> : null; })()}
                                       </div>
                                       {/* Actions */}
                                       <div className="flex items-center gap-3 mt-2.5 text-[11px]">
