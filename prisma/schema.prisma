@@ -56,38 +56,56 @@ model User {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
-  accounts Account[]
-  sessions Session[]
-  bookings Booking[]
-  clients  Client[]
-  profile  ClientProfile?
+  accounts      Account[]
+  sessions      Session[]
+  bookings      Booking[]
+  clients       Client[]           // clients this trainer manages
+  clientProfile Client?            @relation("ClientUser") // if this user IS a client
+  profile       ClientProfile?
+  invites       Invite[]
 }
 
 enum Role {
-  ADMIN    // Antonio (trainer)
+  TRAINER  // Personal trainers
   CLIENT   // Clients
 }
 
-// Trainer manages clients directly (no login needed for clients)
 model Client {
-  id        String   @id @default(cuid())
+  id        String    @id @default(cuid())
   trainerId String?
+  userId    String?   @unique // linked User account (when client logs in)
   name      String
   email     String?
   phone     String?
-  height    Float?   // cm
-  weight    Float?   // kg
-  goals     String?  @db.Text
-  injuries  String?  @db.Text
-  notes     String?  @db.Text
-  active    Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  height    Float?    // cm
+  weight    Float?    // kg
+  goals     String?   @db.Text
+  injuries  String?   @db.Text
+  notes     String?   @db.Text
+  active    Boolean   @default(true)
+  paidUntil DateTime? // subscription expiry — null = no restriction
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
 
-  trainer   User?    @relation(fields: [trainerId], references: [id], onDelete: SetNull)
+  trainer   User?     @relation(fields: [trainerId], references: [id], onDelete: SetNull)
+  user      User?     @relation("ClientUser", fields: [userId], references: [id], onDelete: SetNull)
   programs  ClientProgram[]
   bookings  Booking[]
   prs       PersonalRecord[]
+  invites   Invite[]
+}
+
+model Invite {
+  id        String    @id @default(cuid())
+  token     String    @unique @default(cuid())
+  trainerId String
+  clientId  String
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  trainer   User      @relation(fields: [trainerId], references: [id], onDelete: Cascade)
+  client    Client    @relation(fields: [clientId], references: [id], onDelete: Cascade)
 }
 
 model ClientProfile {
@@ -153,17 +171,21 @@ model ProgramExercise {
   dayId            String
   exerciseName     String
   exerciseId       String  // library reference
+  variant          String? // e.g. "close grip", "paused"
   order            Int     @default(0)
   sets             Int
   reps             Int
   intensityPercent Float?  // %1RM
   loadKg           Float?  // prescribed kg
-  rpe              Float?  // optional
+  rpe              Float?  // optional prescribed RPE
   notes            String? @db.Text
-  // Actuals logged by trainer
+  // Actuals logged by trainer or client
   actualSets       Int?
   actualReps       Int?
   actualLoadKg     Float?
+  actualRpe        Float?  // actual RPE felt
+  clientNotes      String? @db.Text // client's notes visible to trainer
+  repDurationSec   Float?  // time to complete rep (seconds) — for velocity tracking
 
   day ProgramDay @relation(fields: [dayId], references: [id], onDelete: Cascade)
 }

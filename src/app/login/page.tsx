@@ -1,17 +1,36 @@
 "use client";
 
 import { signIn, useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useEffect } from "react";
 import { useI18n } from "@/lib/i18n";
 
-export default function LoginPage() {
+function LoginInner() {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { locale, setLocale, t } = useI18n();
 
+  // Store invite token in sessionStorage if present
   useEffect(() => {
-    if (session) router.push("/trainer");
+    const invite = searchParams.get("invite");
+    if (invite) {
+      sessionStorage.setItem("fitbook-invite-token", invite);
+    }
+  }, [searchParams]);
+
+  useEffect(() => {
+    if (session) {
+      // Check for pending invite token
+      const inviteToken = sessionStorage.getItem("fitbook-invite-token");
+      if (inviteToken) {
+        sessionStorage.removeItem("fitbook-invite-token");
+        router.push(`/api/invites/accept?token=${inviteToken}`);
+        return;
+      }
+      // Role-based routing via root page
+      router.push("/");
+    }
   }, [session, router]);
 
   if (status === "loading") {
@@ -51,7 +70,7 @@ export default function LoginPage() {
           </div>
 
           <button
-            onClick={() => signIn("google", { callbackUrl: "/trainer" })}
+            onClick={() => signIn("google", { callbackUrl: "/" })}
             className="w-full flex items-center justify-center gap-3 bg-[#0e0e0e] border border-[#1e1e1e] rounded-xl px-5 py-3 text-neutral-300 text-[14px] hover:bg-[#161616] hover:border-[#282828] transition-all duration-200"
           >
             <svg className="w-4.5 h-4.5" viewBox="0 0 24 24">
@@ -69,5 +88,17 @@ export default function LoginPage() {
         </p>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="w-5 h-5 border-2 border-neutral-800 border-t-neutral-400 rounded-full animate-spin" />
+      </div>
+    }>
+      <LoginInner />
+    </Suspense>
   );
 }

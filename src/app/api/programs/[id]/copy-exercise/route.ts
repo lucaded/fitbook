@@ -37,6 +37,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
         dayId: day.id,
         exerciseName: body.exerciseName,
         exerciseId: body.exerciseId,
+        variant: body.variant || null,
         order: day.exercises.length,
         sets: body.sets || 3,
         reps: body.reps || 5,

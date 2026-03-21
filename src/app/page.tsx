@@ -4,8 +4,21 @@ import { authOptions } from "@/lib/auth";
 
 export default async function Home() {
   const session = await getServerSession(authOptions);
-  if (session) {
+
+  if (!session) {
+    redirect("/login");
+  }
+
+  const role = (session.user as any)?.role;
+
+  if (role === "TRAINER") {
     redirect("/trainer");
   }
-  redirect("/login");
+
+  if (role === "CLIENT") {
+    redirect("/client");
+  }
+
+  // Default fallback — new users without a role yet
+  redirect("/trainer");
 }

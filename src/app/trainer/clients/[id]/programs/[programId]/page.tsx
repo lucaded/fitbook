@@ -14,7 +14,7 @@ import { useI18n } from "@/lib/i18n";
 import { ConfirmModal } from "@/components/ConfirmModal";
 
 interface ProgramExercise {
-  id: string; dayId: string; exerciseName: string; exerciseId: string; order: number;
+  id: string; dayId: string; exerciseName: string; exerciseId: string; variant: string | null; order: number;
   sets: number; reps: number; intensityPercent: number | null; loadKg: number | null;
   rpe: number | null; notes: string | null;
   actualSets: number | null; actualReps: number | null; actualLoadKg: number | null;
@@ -45,8 +45,26 @@ export default function ProgramEditorPage() {
   const [view, setView] = useState<"table" | "summary" | "charts">("table");
   const [editingLabel, setEditingLabel] = useState<{ dayId: string; value: string } | null>(null);
   const [editingNote, setEditingNote] = useState<{ dayId: string; value: string } | null>(null);
+  const [variantInput, setVariantInput] = useState<{ exId: string; value: string } | null>(null);
+  const [variantSuggestions, setVariantSuggestions] = useState<string[]>([]);
+  const [showVariantDropdown, setShowVariantDropdown] = useState(false);
+  const variantTimer = useRef<NodeJS.Timeout>(undefined);
   const saveTimer = useRef<NodeJS.Timeout>(undefined);
   const hasScrolled = useRef(false);
+
+  // Fetch variant suggestions with debounce
+  const fetchVariantSuggestions = useCallback((exerciseId: string, exerciseName: string) => {
+    if (variantTimer.current) clearTimeout(variantTimer.current);
+    variantTimer.current = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/variants?exerciseId=${encodeURIComponent(exerciseId)}&exerciseName=${encodeURIComponent(exerciseName)}`);
+        if (res.ok) {
+          const data = await res.json();
+          setVariantSuggestions(data);
+        }
+      } catch { /* ignore */ }
+    }, 300);
+  }, []);
 
   const loadProgram = useCallback(() => {
     fetch(`/api/programs/${params.programId}`)
@@ -100,7 +118,7 @@ export default function ProgramEditorPage() {
   const copyExerciseToAllWeeks = async (ex: ProgramExercise, dayNumber: number) => {
     if (!program) return; markSaving();
     await fetch(`/api/programs/${program.id}/copy-exercise`, { method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ exerciseId: ex.exerciseId, exerciseName: ex.exerciseName, dayNumber, sets: ex.sets, reps: ex.reps, intensityPercent: ex.intensityPercent, loadKg: ex.loadKg, rpe: ex.rpe }) });
+      body: JSON.stringify({ exerciseId: ex.exerciseId, exerciseName: ex.exerciseName, variant: ex.variant, dayNumber, sets: ex.sets, reps: ex.reps, intensityPercent: ex.intensityPercent, loadKg: ex.loadKg, rpe: ex.rpe }) });
     markSaved(); loadProgram();
   };
 
@@ -167,7 +185,7 @@ export default function ProgramEditorPage() {
     prog.weeks[weekIdx].days[dayIdx] = { ...prog.weeks[weekIdx].days[dayIdx], exercises: prog.weeks[weekIdx].days[dayIdx].exercises.map((e, i) => i === exIdx ? updated : e) };
     setProgram(prog); markSaving();
     await fetch(`/api/programs/${program.id}/exercises`, { method: "PATCH", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id: ex.id, sets: updated.sets, reps: updated.reps, intensityPercent: updated.intensityPercent, loadKg: updated.loadKg, rpe: updated.rpe, notes: updated.notes, actualSets: updated.actualSets, actualReps: updated.actualReps, actualLoadKg: updated.actualLoadKg }) });
+      body: JSON.stringify({ id: ex.id, sets: updated.sets, reps: updated.reps, intensityPercent: updated.intensityPercent, loadKg: updated.loadKg, rpe: updated.rpe, notes: updated.notes, variant: updated.variant, actualSets: updated.actualSets, actualReps: updated.actualReps, actualLoadKg: updated.actualLoadKg }) });
     markSaved();
   };
 
@@ -265,6 +283,86 @@ export default function ProgramEditorPage() {
   const addTrend = (data: { week: number; value: number }[]) => {
     const r = linReg(data.map((d) => ({ x: d.week, y: d.value })));
     return data.map((d) => ({ ...d, trend: Math.round(r.slope * d.week + r.intercept) }));
+  };
+
+  // Variant input with autocomplete
+  const VariantField = ({ ex, wIdx, dIdx, eIdx }: { ex: ProgramExercise; wIdx: number; dIdx: number; eIdx: number }) => {
+    const isEditing = variantInput?.exId === ex.id;
+    const hasVariant = !!ex.variant;
+
+    const startEditing = () => {
+      setVariantInput({ exId: ex.id, value: ex.variant || "" });
+      setShowVariantDropdown(true);
+      fetchVariantSuggestions(ex.exerciseId, ex.exerciseName);
+    };
+
+    const saveVariant = (value: string) => {
+      const trimmed = value.trim();
+      updateExercise(wIdx, dIdx, eIdx, { variant: trimmed || null });
+      setVariantInput(null);
+      setShowVariantDropdown(false);
+      setVariantSuggestions([]);
+    };
+
+    if (!isEditing && !hasVariant) {
+      return (
+        <button
+          onClick={(e) => { e.stopPropagation(); startEditing(); }}
+          className="text-[10px] text-neutral-700 hover:text-neutral-500 transition-colors mt-0.5"
+        >
+          {t("addVariant")}
+        </button>
+      );
+    }
+
+    if (!isEditing && hasVariant) {
+      return (
+        <button
+          onClick={(e) => { e.stopPropagation(); startEditing(); }}
+          className="text-[11px] text-neutral-500 hover:text-neutral-300 transition-colors mt-0.5 italic"
+        >
+          {ex.variant}
+        </button>
+      );
+    }
+
+    // Editing mode
+    const filteredSugs = variantSuggestions.filter((s) =>
+      s.toLowerCase().includes((variantInput?.value || "").toLowerCase())
+    );
+
+    return (
+      <div className="relative mt-1" onClick={(e) => e.stopPropagation()}>
+        <label className="text-[10px] text-neutral-600 mb-0.5 block">{t("variant")}</label>
+        <input
+          type="text"
+          autoFocus
+          value={variantInput?.value || ""}
+          placeholder={t("variantPlaceholder")}
+          onChange={(e) => {
+            setVariantInput({ exId: ex.id, value: e.target.value });
+            setShowVariantDropdown(true);
+            fetchVariantSuggestions(ex.exerciseId, ex.exerciseName);
+          }}
+          onBlur={() => { setTimeout(() => { saveVariant(variantInput?.value || ""); }, 150); }}
+          onKeyDown={(e) => { if (e.key === "Enter") saveVariant(variantInput?.value || ""); if (e.key === "Escape") { setVariantInput(null); setShowVariantDropdown(false); } }}
+          className="w-full bg-[#0a0a0a] border border-[#1c1c1c] rounded-lg px-2 py-1 text-[11px] text-neutral-300 focus:border-bordeaux-700/60 focus:outline-none"
+        />
+        {showVariantDropdown && filteredSugs.length > 0 && (
+          <div className="absolute left-0 right-0 top-full mt-0.5 bg-[#111] border border-[#1c1c1c] rounded-lg overflow-hidden z-20 shadow-lg">
+            {filteredSugs.map((s) => (
+              <button
+                key={s}
+                onMouseDown={(e) => { e.preventDefault(); saveVariant(s); }}
+                className="w-full text-left px-2.5 py-1.5 text-[11px] text-neutral-400 hover:bg-[#1a1a1a] hover:text-neutral-200 transition-colors"
+              >
+                {s}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+    );
   };
 
   if (loading) return (
@@ -525,7 +623,10 @@ export default function ProgramEditorPage() {
                                 <div className="flex items-start gap-2 min-w-0">
                                   <span className="text-neutral-700 cursor-grab active:cursor-grabbing mt-0.5 select-none" onMouseDown={(e) => e.stopPropagation()}>⠿</span>
                                   <div className="min-w-0">
-                                    <span className="text-[14px] font-semibold text-white block">{ex.exerciseName}</span>
+                                    <span className="text-[14px] font-semibold text-white block">
+                                      {ex.exerciseName}
+                                      {ex.variant && !isExActive && <span className="text-neutral-500 font-normal"> · {ex.variant}</span>}
+                                    </span>
                                     <span className="text-[13px] text-neutral-500 tabular-nums mt-0.5 block">{formatExSummary(ex)}</span>
                                   </div>
                                 </div>
@@ -540,7 +641,8 @@ export default function ProgramEditorPage() {
                               )}
                               {isExActive && (
                                 <div className="mt-3" onClick={(e) => e.stopPropagation()}>
-                                  <div className="grid grid-cols-4 gap-1.5 text-[12px]">
+                                  <VariantField ex={ex} wIdx={wIdx} dIdx={dIdx} eIdx={eIdx} />
+                                  <div className="grid grid-cols-4 gap-1.5 text-[12px] mt-1.5">
                                     {[
                                       { label: t("sets"), val: ex.sets, key: "sets", parse: parseInt },
                                       { label: t("reps"), val: ex.reps, key: "reps", parse: parseInt },
@@ -760,7 +862,10 @@ export default function ProgramEditorPage() {
                                     <div className="flex items-start gap-2 min-w-0">
                                       <span className="text-neutral-700 hover:text-neutral-500 cursor-grab active:cursor-grabbing mt-0.5 select-none opacity-0 group-hover/ex:opacity-100 transition-opacity print:hidden" onMouseDown={(e) => e.stopPropagation()}>⠿</span>
                                       <div className="min-w-0">
-                                        <span className="text-[14px] font-semibold text-white block">{ex.exerciseName}</span>
+                                        <span className="text-[14px] font-semibold text-white block">
+                                          {ex.exerciseName}
+                                          {ex.variant && !isExActive && <span className="text-neutral-500 font-normal"> · {ex.variant}</span>}
+                                        </span>
                                         <span className="text-[13px] text-neutral-500 tabular-nums mt-0.5 block">
                                           {formatExSummary(ex)}
                                         </span>
@@ -781,7 +886,8 @@ export default function ProgramEditorPage() {
                                   {/* Row 2: Editable fields */}
                                   {isExActive && (
                                     <div className="mt-3 print:hidden" onClick={(e) => e.stopPropagation()}>
-                                      <div className="grid grid-cols-4 gap-1.5 text-[12px]">
+                                      <VariantField ex={ex} wIdx={wIdx} dIdx={dIdx} eIdx={eIdx} />
+                                      <div className="grid grid-cols-4 gap-1.5 text-[12px] mt-1.5">
                                         {[
                                           { label: t("sets"), val: ex.sets, key: "sets", parse: parseInt },
                                           { label: t("reps"), val: ex.reps, key: "reps", parse: parseInt },

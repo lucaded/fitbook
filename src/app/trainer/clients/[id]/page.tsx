@@ -46,6 +46,7 @@ interface ClientDetail {
   injuries: string | null;
   notes: string | null;
   active: boolean;
+  paidUntil: string | null;
   programs: Program[];
   prs: {
     id: string;
@@ -139,6 +140,13 @@ export default function ClientDetailPage() {
   const [progForm, setProgForm] = useState({ name: "", weeks: "8", daysPerWeek: "4" });
   const [templates, setTemplates] = useState<{ id: string; name: string; daysPerWeek: number; client: { name: string }; _count: { weeks: number } }[]>([]);
   const [selectedTemplate, setSelectedTemplate] = useState("");
+  const [inviteUrl, setInviteUrl] = useState<string | null>(null);
+  const [inviteLoading, setInviteLoading] = useState(false);
+  const [showInvitePopup, setShowInvitePopup] = useState(false);
+  const [inviteCopied, setInviteCopied] = useState(false);
+  const [showSubModal, setShowSubModal] = useState(false);
+  const [subDate, setSubDate] = useState("");
+  const [subSaving, setSubSaving] = useState(false);
 
   const loadClient = () => {
     fetch(`/api/clients/${params.id}`)
@@ -198,6 +206,73 @@ export default function ClientDetailPage() {
     await fetch(`/api/clients/${params.id}`, { method: "DELETE" });
     toast(t("clientDeleted") || "Client deleted", "info");
     router.push("/trainer/clients");
+  };
+
+  const generateInvite = async () => {
+    setInviteLoading(true);
+    try {
+      const res = await fetch("/api/invites", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ clientId: params.id }),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        toast(err.error || "Failed to generate invite", "error");
+        setInviteLoading(false);
+        return;
+      }
+      const data = await res.json();
+      setInviteUrl(data.url);
+      setShowInvitePopup(true);
+      setInviteCopied(false);
+    } catch {
+      toast("Failed to generate invite", "error");
+    }
+    setInviteLoading(false);
+  };
+
+  const copyInviteLink = async () => {
+    if (!inviteUrl) return;
+    try {
+      await navigator.clipboard.writeText(inviteUrl);
+      setInviteCopied(true);
+      toast(t("inviteLinkCopied"));
+      setTimeout(() => setInviteCopied(false), 3000);
+    } catch {
+      // Fallback
+      const input = document.createElement("input");
+      input.value = inviteUrl;
+      document.body.appendChild(input);
+      input.select();
+      document.execCommand("copy");
+      document.body.removeChild(input);
+      setInviteCopied(true);
+      toast(t("inviteLinkCopied"));
+    }
+  };
+
+  const saveSubscription = async (dateStr: string) => {
+    setSubSaving(true);
+    try {
+      await fetch(`/api/clients/${params.id}/subscription`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ paidUntil: dateStr }),
+      });
+      toast(t("subscriptionUpdated"));
+      setShowSubModal(false);
+      loadClient();
+    } catch {
+      toast("Error updating subscription", "error");
+    }
+    setSubSaving(false);
+  };
+
+  const addMonths = (months: number) => {
+    const d = new Date();
+    d.setMonth(d.getMonth() + months);
+    return d.toISOString().split("T")[0];
   };
 
   const relativeDate = (dateStr: string) => {
@@ -262,6 +337,19 @@ export default function ClientDetailPage() {
           <div className={`w-2.5 h-2.5 rounded-full ${client.active ? "bg-emerald-500" : "bg-neutral-700"}`} />
         </div>
         <div className="flex gap-1 sm:gap-2">
+          <button
+            onClick={generateInvite}
+            disabled={inviteLoading}
+            className="btn-ghost text-[13px] text-neutral-400 hover:text-neutral-200 disabled:opacity-40"
+          >
+            {inviteLoading ? (
+              <span className="flex items-center gap-1.5">
+                <span className="w-3 h-3 border border-neutral-600 border-t-neutral-400 rounded-full animate-spin" />
+              </span>
+            ) : (
+              t("invite")
+            )}
+          </button>
           <button onClick={() => setEditing(!editing)} className="btn-ghost text-[13px]">
             {editing ? t("cancel") : t("edit")}
           </button>
@@ -281,6 +369,47 @@ export default function ClientDetailPage() {
           onConfirm={() => { setShowDeleteConfirm(false); deleteClient(); }}
           onCancel={() => setShowDeleteConfirm(false)}
         />
+      )}
+
+      {/* Invite link popup */}
+      {showInvitePopup && inviteUrl && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-4" onClick={() => setShowInvitePopup(false)}>
+          <div className="bg-[#111] border border-[#1e1e1e] rounded-2xl p-6 w-full max-w-md shadow-2xl animate-in" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-[15px] font-semibold text-neutral-200">{t("inviteClient")}</h3>
+              <button onClick={() => setShowInvitePopup(false)} className="text-neutral-600 hover:text-neutral-400 transition-colors">
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <p className="text-[13px] text-neutral-500 mb-4">
+              {t("inviteExpires")}
+            </p>
+
+            <div className="flex items-center gap-2 mb-4">
+              <input
+                readOnly
+                value={inviteUrl}
+                className="input-field flex-1 text-[13px] text-neutral-400 select-all"
+                onClick={(e) => (e.target as HTMLInputElement).select()}
+              />
+              <button
+                onClick={copyInviteLink}
+                className="btn-primary text-[13px] py-2.5 px-4 shrink-0"
+              >
+                {inviteCopied ? (
+                  <svg className="w-4 h-4 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                ) : (
+                  t("copyLink")
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-8">
@@ -325,6 +454,66 @@ export default function ClientDetailPage() {
                 )}
               </div>
             )}
+          </div>
+
+          {/* Subscription Status */}
+          <div className="card p-6">
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="section-title">{t("subscription")}</h2>
+              <button
+                onClick={() => {
+                  setSubDate(client.paidUntil ? new Date(client.paidUntil).toISOString().split("T")[0] : "");
+                  setShowSubModal(true);
+                }}
+                className="text-[12px] text-neutral-500 hover:text-neutral-300 transition-colors"
+              >
+                {t("setPayment")}
+              </button>
+            </div>
+            {(() => {
+              if (!client.paidUntil) {
+                return (
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-neutral-600" />
+                    <span className="text-[13px] text-neutral-500">{t("noSubscription")}</span>
+                  </div>
+                );
+              }
+              const paid = new Date(client.paidUntil);
+              const now = new Date();
+              const diffMs = paid.getTime() - now.getTime();
+              const diffDays = Math.ceil(diffMs / 86400000);
+              const dateLabel = paid.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+
+              if (diffDays > 14) {
+                return (
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-emerald-500" />
+                    <span className="text-[13px] text-emerald-400">{t("paidUntil")}: {dateLabel}</span>
+                  </div>
+                );
+              } else if (diffDays > 0) {
+                return (
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-amber-500" />
+                    <span className="text-[13px] text-amber-400">
+                      {t("expiresIn")} {diffDays} {t("days")}
+                    </span>
+                    <span className="text-[11px] text-neutral-600">({dateLabel})</span>
+                  </div>
+                );
+              } else {
+                return (
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-red-500" />
+                    <span className="text-[13px] text-red-400">
+                      {t("expired")} {Math.abs(diffDays)} {t("daysAgo")}
+                    </span>
+                    <span className="text-[11px] text-neutral-600">({dateLabel})</span>
+                  </div>
+                );
+              }
+            })()}
           </div>
 
           {/* PRs */}
@@ -451,6 +640,65 @@ export default function ClientDetailPage() {
           )}
         </div>
       </div>
+
+      {/* Subscription Modal */}
+      {showSubModal && (
+        <div className="fixed inset-0 z-[150] flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setShowSubModal(false)}>
+          <div className="bg-[#121212] border border-[#1e1e1e] rounded-t-2xl sm:rounded-2xl w-full sm:max-w-sm sm:mx-4 p-6 shadow-2xl animate-in" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-[15px] font-semibold text-neutral-100 mb-5">{t("setPayment")}</h3>
+
+            <div className="mb-4">
+              <label className="label">{t("paidUntil")}</label>
+              <input
+                type="date"
+                value={subDate}
+                onChange={(e) => setSubDate(e.target.value)}
+                className="input-field"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-2 mb-5">
+              <button
+                onClick={() => setSubDate(addMonths(1))}
+                className="btn-ghost text-[12px] py-2 text-center"
+              >
+                {t("oneMonth")}
+              </button>
+              <button
+                onClick={() => setSubDate(addMonths(3))}
+                className="btn-ghost text-[12px] py-2 text-center"
+              >
+                {t("threeMonths")}
+              </button>
+              <button
+                onClick={() => setSubDate(addMonths(6))}
+                className="btn-ghost text-[12px] py-2 text-center"
+              >
+                {t("sixMonths")}
+              </button>
+              <button
+                onClick={() => setSubDate(addMonths(12))}
+                className="btn-ghost text-[12px] py-2 text-center"
+              >
+                {t("oneYear")}
+              </button>
+            </div>
+
+            <div className="flex gap-2">
+              <button onClick={() => setShowSubModal(false)} className="flex-1 btn-ghost text-[13px] py-2.5 text-center">
+                {t("cancel")}
+              </button>
+              <button
+                onClick={() => subDate && saveSubscription(subDate)}
+                disabled={!subDate || subSaving}
+                className="flex-1 btn-primary disabled:opacity-40 text-[13px] py-2.5"
+              >
+                {subSaving ? t("saving") : t("save")}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
